@@ -39,7 +39,7 @@ An adapter must document the states its upstream API can store. Plain WordPress 
 
 The editable metadata adapter requires one row for its configured key. It rejects duplicate rows before mutation because a single visible snapshot cannot safely describe or restore multiple stored values.
 
-The first milestone keeps ACF adapters display-only. ACF access uses documented functions. The adapter verifies that the configured field key resolves to the configured field name and type. The same support decision gates display reads, sorting controls, filter controls, and query planning.
+The first milestone keeps ACF adapters display-only. ACF access uses documented functions. The adapter verifies that the configured field key resolves to the configured field name and type. The same support decision gates display reads, sorting controls, filter controls, and query planning. For scalar selects, the resolved ACF field is authoritative for current choice labels. The adapter keeps a bounded choice map as presentation metadata while preserving the raw value for identity and query behavior. Presentation labels do not enter snapshots, equality, hashes, audit data, or undo state.
 
 ## Consequences
 

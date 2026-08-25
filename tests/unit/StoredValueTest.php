@@ -41,5 +41,6 @@ final class StoredValueTest extends TestCase
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $stored->hash());
         self::assertSame($stored->hash(), (new StoredValue(true, '0'))->hash());
         self::assertNotSame($stored->hash(), (new StoredValue(true, 0))->hash());
+        self::assertSame($stored->hash(), (new StoredValue(true, '0', 'Resolved label'))->hash());
     }
 }

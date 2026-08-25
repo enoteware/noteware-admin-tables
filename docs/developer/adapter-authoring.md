@@ -15,7 +15,7 @@ A display adapter must:
 
 Unknown types are read-only and render a safe empty state. A missing integration must not cause a fatal error.
 
-ACF display adapters use documented ACF functions. They verify that the field key resolves to the configured field name and type before formatting or enabling query controls. The first milestone accepts only single-value ACF selects with the `value` return format. Multiple and array-return selects fail closed. Select labels come from the field's choice map. Image output uses WordPress attachment functions and batch-preloaded attachment data.
+ACF display adapters use documented ACF functions. They verify that the field key resolves to the configured field name and type before formatting or enabling query controls. The first milestone accepts only single-value ACF selects with the `value` return format. Multiple and array-return selects fail closed. The resolved field's bounded choice map is authoritative for select display labels. A missing current choice displays the raw key instead of a stale configured label. The presentation label does not change the raw value, snapshot, equality, hash, audit data, or undo state. Image output uses WordPress attachment functions and batch-preloaded attachment data.
 
 ## Editable adapter requirements
 

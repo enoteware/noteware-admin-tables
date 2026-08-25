@@ -13,7 +13,8 @@ final class StoredValue
 {
     public function __construct(
         public readonly bool $exists,
-        public readonly mixed $value
+        public readonly mixed $value,
+        public readonly ?string $displayLabel = null
     ) {
     }
 

@@ -50,6 +50,12 @@ final class ColumnDefinitionTest extends TestCase
         new ColumnDefinition('state', 'State', 'meta', 'select', 'state', null, false, true, false, array(), 'Not set');
     }
 
+    public function test_direct_constructor_cannot_make_images_filterable(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new ColumnDefinition('photo', 'Photo', 'meta', 'image', 'photo', null, false, true, false, array(), 'Not set');
+    }
+
     #[DataProvider('invalidDefinitions')]
     public function test_invalid_or_unsafe_definitions_are_rejected(array $definition): void
     {
@@ -73,6 +79,7 @@ final class ColumnDefinitionTest extends TestCase
         yield 'unsupported native sort' => array(array_replace($base, array('source' => 'native', 'field' => 'status', 'type' => 'select', 'sortable' => true)));
         yield 'acf write without field key' => array(array_replace($base, array('source' => 'acf', 'editable' => true)));
         yield 'image write' => array(array_replace($base, array('type' => 'image', 'editable' => true)));
+        yield 'image filter' => array(array_replace($base, array('type' => 'image', 'filterable' => true)));
         yield 'filterable select without choices' => array(array_replace($base, array('type' => 'select', 'filterable' => true)));
         yield 'editable select without choices' => array(array_replace($base, array('type' => 'select', 'editable' => true)));
     }

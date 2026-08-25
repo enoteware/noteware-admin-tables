@@ -131,6 +131,71 @@ if (isset($posts_by_index[11])) {
 }
 
 if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
+    $choice_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+        array(
+            'key'        => 'resolved_choice_label',
+            'label'      => 'Resolved choice label',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_demo_choice',
+            'field_key'  => 'field_nat_demo_choice',
+            'sortable'   => false,
+            'filterable' => false,
+            'editable'   => false,
+            'choices'    => array('beta' => 'Stale beta label'),
+        )
+    );
+    $choice_adapter = new Noteware\AdminTables\Adapter\AcfAdapter();
+    $choice_stored  = $choice_adapter->read($posts_by_index[1], $choice_column);
+    $choice_markup  = (new Noteware\AdminTables\Screen\ColumnRenderer())->value($choice_column, $choice_stored);
+    $assert('beta' === $choice_stored->value, 'The ACF select adapter must preserve the raw stored choice value.');
+    $assert('Beta' === $choice_stored->displayLabel, 'The ACF select adapter must resolve the current field choice label.');
+    $assert('Beta' === $choice_markup, 'ACF select display must prefer the resolved field label over stale configuration.');
+
+    $choice_without_config = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+        array(
+            'key'        => 'resolved_choice_without_config',
+            'label'      => 'Resolved choice without config',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_demo_choice',
+            'field_key'  => 'field_nat_demo_choice',
+            'sortable'   => false,
+            'filterable' => false,
+            'editable'   => false,
+            'choices'    => array(),
+        )
+    );
+    $choice_without_config_stored = $choice_adapter->read($posts_by_index[1], $choice_without_config);
+    $assert('Beta' === $choice_without_config_stored->displayLabel, 'A display-only ACF select must not require duplicated configured labels.');
+
+    if (isset($posts_by_index[2])) {
+        $retired_value = get_post_meta($posts_by_index[2], 'nat_demo_choice', true);
+        try {
+            update_post_meta($posts_by_index[2], 'nat_demo_choice', 'retired');
+            $retired_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+                array(
+                    'key'        => 'retired_choice',
+                    'label'      => 'Retired choice',
+                    'source'     => 'acf',
+                    'type'       => 'select',
+                    'field'      => 'nat_demo_choice',
+                    'field_key'  => 'field_nat_demo_choice',
+                    'sortable'   => false,
+                    'filterable' => false,
+                    'editable'   => false,
+                    'choices'    => array('retired' => 'Stale retired label'),
+                )
+            );
+            $retired_stored = (new Noteware\AdminTables\Adapter\AcfAdapter())->read($posts_by_index[2], $retired_column);
+            $retired_markup = (new Noteware\AdminTables\Screen\ColumnRenderer())->value($retired_column, $retired_stored);
+            $assert('retired' === $retired_stored->displayLabel, 'A missing live ACF choice must use its raw key as the display label.');
+            $assert('retired' === $retired_markup, 'A removed ACF choice must not use a stale configured label.');
+        } finally {
+            update_post_meta($posts_by_index[2], 'nat_demo_choice', $retired_value);
+        }
+    }
+
     acf_add_local_field_group(
         array(
             'key'      => 'group_nat_test_unsupported_selects',
@@ -154,10 +219,41 @@ if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
                     'multiple'      => 0,
                     'return_format' => 'array',
                 ),
+                array(
+                    'key'           => 'field_nat_test_hostile_select',
+                    'label'         => 'Hostile label select',
+                    'name'          => 'nat_test_hostile_select',
+                    'type'          => 'select',
+                    'choices'       => array('hostile' => '<img src=x onerror=alert(1)>'),
+                    'multiple'      => 0,
+                    'return_format' => 'value',
+                ),
             ),
             'location' => array(),
         )
     );
+
+    update_field('field_nat_test_hostile_select', 'hostile', $posts_by_index[1]);
+    $hostile_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+        array(
+            'key'        => 'hostile_select',
+            'label'      => 'Hostile select',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_test_hostile_select',
+            'field_key'  => 'field_nat_test_hostile_select',
+            'sortable'   => false,
+            'filterable' => false,
+            'editable'   => false,
+            'choices'    => array(),
+        )
+    );
+    $hostile_stored = (new Noteware\AdminTables\Adapter\AcfAdapter())->read($posts_by_index[1], $hostile_column);
+    $hostile_markup = (new Noteware\AdminTables\Screen\ColumnRenderer())->value($hostile_column, $hostile_stored);
+    $assert('<img src=x onerror=alert(1)>' === $hostile_stored->displayLabel, 'The ACF adapter must preserve the current live choice label for final-boundary escaping.');
+    $assert('&lt;img src=x onerror=alert(1)&gt;' === $hostile_markup, 'A live ACF choice label must be escaped at the HTML boundary.');
+    delete_post_meta($posts_by_index[1], 'nat_test_hostile_select');
+    delete_post_meta($posts_by_index[1], '_nat_test_hostile_select');
 
     foreach (
         array(

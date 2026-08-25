@@ -33,7 +33,7 @@ final class ColumnRenderer
 
         $display = match ($column->type) {
             'boolean' => in_array($stored->value, array(true, 1, '1'), true) ? __('Yes', 'noteware-admin-tables') : __('No', 'noteware-admin-tables'),
-            'select'  => $column->choices[(string) $stored->value] ?? (string) $stored->value,
+            'select'  => $stored->displayLabel ?? $column->choices[(string) $stored->value] ?? (string) $stored->value,
             default   => is_scalar($stored->value) ? (string) $stored->value : (wp_json_encode($stored->value) ?: ''),
         };
 
@@ -50,7 +50,7 @@ final class ColumnRenderer
         }
         return match ($column->type) {
             'boolean' => in_array($stored->value, array(true, 1, '1'), true) ? __('Yes', 'noteware-admin-tables') : __('No', 'noteware-admin-tables'),
-            'select'  => $column->choices[(string) $stored->value] ?? (string) $stored->value,
+            'select'  => $stored->displayLabel ?? $column->choices[(string) $stored->value] ?? (string) $stored->value,
             default   => is_scalar($stored->value) ? (string) $stored->value : '',
         };
     }

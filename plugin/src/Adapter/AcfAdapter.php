@@ -18,6 +18,9 @@ final class AcfAdapter implements FieldAdapter
     /** @var array<string, bool> */
     private array $supportCache = array();
 
+    /** @var array<string, array<string, string>> */
+    private array $choiceCache = array();
+
     public function source(): string
     {
         return 'acf';
@@ -32,8 +35,18 @@ final class AcfAdapter implements FieldAdapter
         if (! $exists) {
             return new StoredValue(false, null);
         }
-        $value = get_field($column->fieldKey ?? $column->field, $postId);
-        return new StoredValue(true, $value);
+        $value        = get_field($column->fieldKey ?? $column->field, $postId);
+        $displayLabel = null;
+        if ('select' === $column->type && is_scalar($value)) {
+            $selector     = $column->fieldKey ?? $column->field;
+            $cacheKey     = $selector . ':' . $column->field . ':' . $column->type;
+            $choice       = (string) $value;
+            $displayLabel = $choice;
+            if (isset($this->choiceCache[$cacheKey]) && array_key_exists($choice, $this->choiceCache[$cacheKey])) {
+                $displayLabel = $this->choiceCache[$cacheKey][$choice];
+            }
+        }
+        return new StoredValue(true, $value, $displayLabel);
     }
 
     public function supports(ColumnDefinition $column): bool
@@ -64,6 +77,19 @@ final class AcfAdapter implements FieldAdapter
         if ($supported && 'select' === $column->type) {
             $supported = empty($field['multiple'])
                 && (! isset($field['return_format']) || 'value' === $field['return_format']);
+            if ($supported) {
+                $choices = array();
+                foreach ((array) ($field['choices'] ?? array()) as $value => $label) {
+                    $value = (string) $value;
+                    if (count($choices) >= 200) {
+                        break;
+                    }
+                    if (strlen($value) <= 191 && is_scalar($label) && strlen((string) $label) <= 200) {
+                        $choices[$value] = (string) $label;
+                    }
+                }
+                $this->choiceCache[$cacheKey] = $choices;
+            }
         }
         $this->supportCache[$cacheKey] = $supported;
         return $supported;

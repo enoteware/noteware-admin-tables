@@ -65,6 +65,9 @@ final class ColumnDefinition
         if ($editable && ('meta' !== $source || ! in_array($type, array('text', 'number', 'boolean', 'select', 'date'), true))) {
             throw new InvalidArgumentException('Only allowlisted scalar WordPress metadata fields are editable.');
         }
+        if ('image' === $type && $filterable) {
+            throw new InvalidArgumentException('Image columns do not support filtering.');
+        }
         if ('select' === $type && ($filterable || $editable) && ! $choices) {
             throw new InvalidArgumentException('Filterable or editable select columns require at least one configured choice.');
         }
