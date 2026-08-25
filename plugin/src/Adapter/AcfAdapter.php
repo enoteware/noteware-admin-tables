@@ -85,11 +85,15 @@ final class AcfAdapter implements FieldAdapter
                 $choices = array();
                 foreach ($fieldChoices as $value => $label) {
                     $value = (string) $value;
-                    if (strlen($value) <= 191 && is_scalar($label) && strlen((string) $label) <= 200) {
-                        $choices[$value] = (string) $label;
+                    if (strlen($value) > 191 || ! is_scalar($label) || strlen((string) $label) > 200) {
+                        $supported = false;
+                        break;
                     }
+                    $choices[$value] = (string) $label;
                 }
-                $this->choiceCache[$cacheKey] = $choices;
+                if ($supported) {
+                    $this->choiceCache[$cacheKey] = $choices;
+                }
             }
         }
         $this->supportCache[$cacheKey] = $supported;

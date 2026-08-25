@@ -135,6 +135,8 @@ if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
     for ($choice_index = 0; $choice_index <= 200; ++$choice_index) {
         $oversized_choices['choice_' . $choice_index] = 'Choice ' . $choice_index;
     }
+    $oversized_choice_key   = str_repeat('k', 192);
+    $oversized_choice_label = str_repeat('L', 201);
 
     $choice_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
         array(
@@ -242,6 +244,24 @@ if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
                     'multiple'      => 0,
                     'return_format' => 'value',
                 ),
+                array(
+                    'key'           => 'field_nat_test_oversized_choice_key',
+                    'label'         => 'Oversized choice key',
+                    'name'          => 'nat_test_oversized_choice_key',
+                    'type'          => 'select',
+                    'choices'       => array($oversized_choice_key => 'Label'),
+                    'multiple'      => 0,
+                    'return_format' => 'value',
+                ),
+                array(
+                    'key'           => 'field_nat_test_oversized_choice_label',
+                    'label'         => 'Oversized choice label',
+                    'name'          => 'nat_test_oversized_choice_label',
+                    'type'          => 'select',
+                    'choices'       => array('value' => $oversized_choice_label),
+                    'multiple'      => 0,
+                    'return_format' => 'value',
+                ),
             ),
             'location' => array(),
         )
@@ -285,6 +305,30 @@ if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
     );
     $oversized_stored = (new Noteware\AdminTables\Adapter\AcfAdapter())->read($posts_by_index[1], $oversized_column);
     $assert(! $oversized_stored->exists, 'An ACF select with more than 200 live choices must fail closed.');
+
+    foreach (
+        array(
+            array('key' => 'oversized_choice_key', 'field' => 'nat_test_oversized_choice_key', 'field_key' => 'field_nat_test_oversized_choice_key'),
+            array('key' => 'oversized_choice_label', 'field' => 'nat_test_oversized_choice_label', 'field_key' => 'field_nat_test_oversized_choice_label'),
+        ) as $oversized_choice
+    ) {
+        $column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+            array_merge(
+                $oversized_choice,
+                array(
+                    'label'      => 'Oversized choice entry',
+                    'source'     => 'acf',
+                    'type'       => 'select',
+                    'sortable'   => false,
+                    'filterable' => false,
+                    'editable'   => false,
+                    'choices'    => array(),
+                )
+            )
+        );
+        $stored = (new Noteware\AdminTables\Adapter\AcfAdapter())->read($posts_by_index[1], $column);
+        $assert(! $stored->exists, sprintf('%s must fail closed instead of using a partial live choice map.', $oversized_choice['key']));
+    }
 
     foreach (
         array(
