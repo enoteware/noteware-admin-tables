@@ -32,6 +32,14 @@ wp-config.php
 # Log files
 *.log
 
+# Local sandbox settings and generated files
+/.env
+/.phpunit.result.cache
+/vendor/
+/node_modules/
+/build/
+/dist/
+
 # htaccess
 /.htaccess
 

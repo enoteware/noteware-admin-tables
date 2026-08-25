@@ -1,0 +1,61 @@
+name: noteware-admin-tables
+
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${NAT_DB_NAME}
+      MARIADB_USER: ${NAT_DB_USER}
+      MARIADB_PASSWORD: ${NAT_DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${NAT_DB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - db_data:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:php8.3-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${NAT_DB_NAME}
+      WORDPRESS_DB_USER: ${NAT_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${NAT_DB_PASSWORD}
+      WORDPRESS_DEBUG: "1"
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_ENVIRONMENT_TYPE', 'local' );
+        define( 'SCRIPT_DEBUG', true );
+    ports:
+      - "100.80.13.78:${NAT_WP_PORT:-8097}:80"
+    volumes:
+      - wp_data:/var/www/html
+      - ./plugin:/var/www/html/wp-content/plugins/noteware-admin-tables
+
+  wpcli:
+    image: wordpress:cli-php8.3
+    user: "33:33"
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${NAT_DB_NAME}
+      WORDPRESS_DB_USER: ${NAT_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${NAT_DB_PASSWORD}
+    volumes:
+      - wp_data:/var/www/html
+      - ./plugin:/var/www/html/wp-content/plugins/noteware-admin-tables
+    working_dir: /var/www/html
+
+volumes:
+  db_data:
+  wp_data:
