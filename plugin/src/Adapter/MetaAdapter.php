@@ -80,14 +80,15 @@ final class MetaAdapter implements EditableFieldAdapter
 
     public function write(int $postId, ColumnDefinition $column, mixed $value, StoredValue $expected): void
     {
+        $storageValue = wp_slash($value);
         if (! $expected->exists) {
-            if (! add_post_meta($postId, $column->field, $value, true)) {
+            if (! add_post_meta($postId, $column->field, $storageValue, true)) {
                 throw new RuntimeException('The field changed before the edit could be saved.');
             }
             return;
         }
 
-        $result = update_post_meta($postId, $column->field, $value, $expected->value);
+        $result = update_post_meta($postId, $column->field, $storageValue, $expected->value);
         if (false === $result && ($expected->value !== $value || ! $expected->equals($this->read($postId, $column)))) {
             throw new RuntimeException('The field changed before the edit could be saved.');
         }
@@ -98,7 +99,7 @@ final class MetaAdapter implements EditableFieldAdapter
         if (! $expected->exists) {
             return;
         }
-        if (! delete_post_meta($postId, $column->field, $expected->value)) {
+        if (! delete_post_meta($postId, $column->field, wp_slash($expected->value))) {
             throw new RuntimeException('The field changed before it could be removed.');
         }
     }

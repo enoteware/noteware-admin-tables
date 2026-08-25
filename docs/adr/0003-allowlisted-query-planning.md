@@ -25,6 +25,8 @@ The planner never accepts raw SQL, a request metadata key, a callback, or a free
 
 Metadata sort and filter plans are marked as expensive. The list remains paginated. Performance tests record the query count and response time against the 10,000-record fixture.
 
+Metadata sorting uses a named value clause plus an alternate `NOT EXISTS` clause so rows with absent values remain visible. The presence group is combined with any existing metadata query through a top-level `AND`, so sorting cannot broaden another component's filter.
+
 ## Consequences
 
 - Query safety can be tested without issuing SQL.

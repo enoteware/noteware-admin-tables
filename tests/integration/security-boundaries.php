@@ -253,7 +253,8 @@ foreach ($scalar_cases as $column_key => [$initial_value, $new_value]) {
 }
 
 // The remove path must preserve absence and let undo restore the exact earlier value.
-update_post_meta($post_id, $note_column->field, 'Removal boundary value');
+$remove_boundary_value = 'Removal C:\\Archive\\record.txt';
+update_post_meta($post_id, $note_column->field, wp_slash($remove_boundary_value));
 $remove_before = $note_state();
 $remove_edit   = $controller->processEdit(
     $edit_request('nat_demo_note', '', $remove_before->hash(), true)
@@ -265,9 +266,42 @@ $controller->processUndo(
         'nonce'    => (string) $remove_edit['undoNonce'],
     )
 );
-$assert('Removal boundary value' === get_post_meta($post_id, $note_column->field, true), 'Undo must restore a removed metadata row.');
+$assert($remove_boundary_value === get_post_meta($post_id, $note_column->field, true), 'Undo must restore a removed metadata row without losing backslashes.');
+
+// WordPress request slashing and audit JSON must preserve literal backslashes through edit and undo.
+$backslash_before = 'Original C:\\Temp\\record.txt';
+$backslash_after  = 'Saved D:\\Archive\\note.txt';
+update_post_meta($post_id, $note_column->field, wp_slash($backslash_before));
+$backslash_state = $note_state();
+$backslash_edit  = $controller->processEdit(
+    $edit_request('nat_demo_note', wp_slash($backslash_after), $backslash_state->hash())
+);
+$assert($backslash_after === get_post_meta($post_id, $note_column->field, true), 'Edit request unslashing must preserve literal backslashes.');
+$assert($backslash_after === ($backslash_edit['value'] ?? null), 'The edit response must return the canonical value with literal backslashes.');
+$controller->processUndo(
+    array(
+        'audit_id' => (string) $backslash_edit['auditId'],
+        'nonce'    => (string) $backslash_edit['undoNonce'],
+    )
+);
+$assert($backslash_before === get_post_meta($post_id, $note_column->field, true), 'Undo must restore literal backslashes from the audit snapshot.');
+
+delete_post_meta($post_id, $note_column->field);
+$backslash_absent_state = $note_state();
+$backslash_add          = $controller->processEdit(
+    $edit_request('nat_demo_note', wp_slash($backslash_after), $backslash_absent_state->hash())
+);
+$assert($backslash_after === get_post_meta($post_id, $note_column->field, true), 'The absent-value add path must preserve literal backslashes.');
+$controller->processUndo(
+    array(
+        'audit_id' => (string) $backslash_add['auditId'],
+        'nonce'    => (string) $backslash_add['undoNonce'],
+    )
+);
+$assert(! metadata_exists('post', $post_id, $note_column->field), 'Undo after an add must restore the exact absent state.');
+
 if ($original_state->exists) {
-    update_post_meta($post_id, $note_column->field, $original_value);
+    update_post_meta($post_id, $note_column->field, wp_slash($original_value));
 } else {
     delete_post_meta($post_id, $note_column->field);
 }
