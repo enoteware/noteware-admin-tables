@@ -38,7 +38,7 @@ Metadata sort plans use `meta_query`, which makes WordPress core group results b
 
 ## Audit and undo
 
-Audit rows are append-only. An edit fails if its audit record cannot be written. Undo checks current authorization and refuses to overwrite a value that no longer matches the original edit.
+Audit snapshots, actor data, field locators, and timestamps are immutable. Undo appends a new audit row, then updates only the guarded `undone_at`, `undone_by`, and `undo_audit_id` markers on the original row. An edit fails if its audit record cannot be written. Undo checks current authorization and refuses to overwrite a value that no longer matches the original edit.
 
 Plugin data remains installed by default. Do not add uninstall deletion without an explicit administrator opt-in and tests for both choices.
 
@@ -58,7 +58,7 @@ The fixture command creates at least 10,000 generic records and is safe to run m
 
 Metadata sorting and filtering are marked as expensive because standard WordPress metadata value columns are not generally indexed for these operations. Keep requests paginated and document the measured sandbox result.
 
-The first milestone shows an admin warning before a metadata sort or filter runs. A request with more than five active metadata filters fails closed instead of building an unbounded compound query.
+The first milestone shows an admin warning before a metadata sort or filter runs. A request with more than five plugin-added metadata filters fails closed instead of building an unbounded compound query.
 
 ## Release evidence
 

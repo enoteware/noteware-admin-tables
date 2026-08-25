@@ -9,7 +9,7 @@ Inline editing must leave evidence and provide a safe recovery path. Undo must n
 
 ## Decision
 
-Plugin edits use one edit service. The service performs authorization, nonce verification, validation, sanitization, current-value comparison, write, readback, and audit recording in that order.
+Plugin edits use one edit service. The service verifies the nonce, authorizes the object and field, starts a transaction, locks the mutation boundary, reads and compares the current snapshot, validates and sanitizes the new value, writes, reads back, and records the audit entry in that order.
 
 Audit records use a plugin-owned database table created with `dbDelta()`. Each record stores:
 

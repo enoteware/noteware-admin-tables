@@ -9,7 +9,7 @@ The plugin must support posts, pages, and custom post types without replacing th
 
 ## Decision
 
-The registry discovers post types through `get_post_types()` after WordPress registers them. A screen is eligible only when its post type has an admin user interface and site configuration enables it.
+The registry reads post types from validated site configuration after WordPress registers them. `Configuration::postTypes()` exposes only configured post types that exist and have an admin user interface.
 
 Each registered screen owns immutable column definitions. It connects them to documented WordPress extension points for:
 
@@ -41,7 +41,6 @@ The plugin uses the documented dynamic post-type cell action. WordPress core fir
 
 ## Public API basis
 
-- [WordPress `get_post_types()` reference](https://developer.wordpress.org/reference/functions/get_post_types/)
 - [WordPress post-type column filter reference](https://developer.wordpress.org/reference/hooks/manage_post_type_posts_columns/)
 - [WordPress custom post-type column action reference](https://developer.wordpress.org/reference/hooks/manage_post-post_type_posts_custom_column/)
 - [WordPress `restrict_manage_posts` action reference](https://developer.wordpress.org/reference/hooks/restrict_manage_posts/)

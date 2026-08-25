@@ -97,7 +97,7 @@ final class EditController
             if ($remove) {
                 $adapter->remove($postId, $column, $before);
             } else {
-                $validated = $adapter->validate($column, $this->requestValue($request, 'value'));
+                $validated = $adapter->validate($column, $this->requestInput($request, 'value'));
                 $value     = $adapter->sanitize($column, $validated);
                 $adapter->write($postId, $column, $value, $before);
             }
@@ -204,6 +204,15 @@ final class EditController
             throw new InvalidArgumentException('The request contains an invalid value.');
         }
         return sanitize_text_field(wp_unslash($request[$key]));
+    }
+
+    /** @param array<string, mixed> $request Raw request data. */
+    private function requestInput(array $request, string $key): string
+    {
+        if (! isset($request[$key]) || ! is_string($request[$key])) {
+            throw new InvalidArgumentException('The request contains an invalid value.');
+        }
+        return wp_unslash($request[$key]);
     }
 
     private function decodeStored(string $json): StoredValue

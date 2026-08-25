@@ -33,7 +33,7 @@ final class ColumnRenderer
 
         $display = match ($column->type) {
             'boolean' => in_array($stored->value, array(true, 1, '1'), true) ? __('Yes', 'noteware-admin-tables') : __('No', 'noteware-admin-tables'),
-            'select'  => $stored->displayLabel ?? $column->choices[(string) $stored->value] ?? (string) $stored->value,
+            'select'  => $this->selectText($column, $stored),
             default   => is_scalar($stored->value) ? (string) $stored->value : (wp_json_encode($stored->value) ?: ''),
         };
 
@@ -50,7 +50,7 @@ final class ColumnRenderer
         }
         return match ($column->type) {
             'boolean' => in_array($stored->value, array(true, 1, '1'), true) ? __('Yes', 'noteware-admin-tables') : __('No', 'noteware-admin-tables'),
-            'select'  => $stored->displayLabel ?? $column->choices[(string) $stored->value] ?? (string) $stored->value,
+            'select'  => $this->selectText($column, $stored),
             default   => is_scalar($stored->value) ? (string) $stored->value : '',
         };
     }
@@ -90,5 +90,13 @@ final class ColumnRenderer
         $html .= '<button type="button" class="button button-small nat-cancel">' . esc_html__('Cancel', 'noteware-admin-tables') . '</button>';
         $html .= '</div><span class="nat-status" role="status" aria-live="polite"></span>';
         return $html;
+    }
+
+    private function selectText(ColumnDefinition $column, StoredValue $stored): string
+    {
+        if (! is_scalar($stored->value)) {
+            return '';
+        }
+        return $stored->displayLabel ?? $column->choices[(string) $stored->value] ?? (string) $stored->value;
     }
 }

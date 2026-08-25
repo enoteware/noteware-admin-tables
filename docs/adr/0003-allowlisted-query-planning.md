@@ -21,7 +21,7 @@ The first milestone supports exact scalar filters. Parsers enforce these rules:
 
 Sort direction accepts only `ASC` or `DESC`. Metadata comparison and cast values come from the field type, not the request. Native columns map to documented `WP_Query` order and filter arguments. Metadata columns map to named `meta_query` clauses with trusted keys and fixed comparison types.
 
-The planner never accepts raw SQL, a request metadata key, a callback, or a free-form operator. Invalid input produces a safe no-op plus an admin error message. It does not fall back to a broader query.
+The planner never accepts raw SQL, a request metadata key, a callback, or a free-form operator. Invalid input forces an empty result with `post__in` set to `[0]` and shows an admin error. It does not fall back to a broader query.
 
 Metadata sort and filter plans are marked as expensive. The list remains paginated. Performance tests record the query count and response time against the 10,000-record fixture.
 

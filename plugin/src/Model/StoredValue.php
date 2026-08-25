@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Noteware\AdminTables\Model;
 
+use JsonException;
+
 final class StoredValue
 {
     public function __construct(
@@ -38,7 +40,12 @@ final class StoredValue
 
     public function hash(): string
     {
-        return hash('sha256', (string) json_encode($this->toArray(), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+        try {
+            $encoded = 'json:' . (string) json_encode($this->toArray(), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            $encoded = 'php:' . serialize($this->toArray());
+        }
+        return hash('sha256', $encoded);
     }
 
     public function state(): string

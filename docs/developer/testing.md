@@ -58,9 +58,11 @@ Start the local site:
 bash scripts/sandbox-up.sh
 ```
 
-Open the Tailscale-only review URL:
+Open the review URL configured in the ignored `.env` file. The public default is:
 
-http://note-devbox.tailac4262.ts.net:8097
+http://127.0.0.1:8097
+
+On a remote development host, set `NAT_WP_BIND_ADDRESS` and `NAT_WP_URL` to the trusted interface and full review URL.
 
 Use the local credentials from the ignored `.env` file. Never paste them into a terminal transcript, issue, commit, pull request, or screenshot.
 

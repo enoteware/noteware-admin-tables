@@ -1,4 +1,6 @@
 const fs = require('node:fs');
+const path = require('node:path');
+const { normalizeLicense } = require('./license-utils');
 
 const composer = JSON.parse(fs.readFileSync('composer.lock', 'utf8'));
 const npm = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
@@ -11,34 +13,35 @@ for (const dependency of [
 	rows.push({
 		manager: 'composer',
 		name: dependency.name,
-		license: (dependency.license || []).join(' OR ') || 'MISSING',
+		license: normalizeLicense(dependency.license) || 'MISSING',
 	});
 }
 
+const nodeModulesRoot = path.resolve('node_modules');
 for (const [location, dependency] of Object.entries(npm.packages || {})) {
 	if (!location) {
 		continue;
 	}
 	let installed = {};
-	const installedManifest = `${location}/package.json`;
-	if (fs.existsSync(installedManifest)) {
+	const installedManifest = path.resolve(location, 'package.json');
+	if (
+		installedManifest.startsWith(`${nodeModulesRoot}${path.sep}`) &&
+		fs.existsSync(installedManifest)
+	) {
 		installed = JSON.parse(fs.readFileSync(installedManifest, 'utf8'));
 	}
-	const legacy = dependency.licenses || installed.licenses;
-	const legacyLicenses = Array.isArray(legacy)
-		? legacy
-				.map((item) => (item && item.type ? item.type : ''))
-				.filter(Boolean)
-				.join(' OR ')
-		: '';
+	const license = [
+		dependency.license,
+		installed.license,
+		dependency.licenses,
+		installed.licenses,
+	]
+		.map(normalizeLicense)
+		.find(Boolean);
 	rows.push({
 		manager: 'npm',
 		name: location.replace(/^node_modules\//, ''),
-		license:
-			dependency.license ||
-			installed.license ||
-			legacyLicenses ||
-			'MISSING',
+		license: license || 'MISSING',
 	});
 }
 

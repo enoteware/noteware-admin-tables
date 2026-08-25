@@ -5,7 +5,7 @@
     "license": "GPL-2.0-or-later",
     "prettier": "@wordpress/prettier-config",
     "scripts": {
-        "lint": "eslint \"plugin/assets/**/*.js\" \"scripts/**/*.js\" \"tests/**/*.js\"",
+        "lint": "eslint \"playwright.config.js\" \"plugin/assets/**/*.js\" \"scripts/**/*.js\" \"tests/**/*.js\"",
         "test": "jest --runInBand",
         "audit": "npm audit --audit-level=high",
         "check:licenses": "node scripts/license-report.js",

@@ -33,14 +33,14 @@ See [ROADMAP.md](ROADMAP.md) for the delivery plan and boundaries.
 
 ## Local WordPress sandbox
 
-The sandbox runs WordPress and MariaDB in Docker. It binds WordPress to the DevBox Tailscale address only.
+The sandbox runs WordPress and MariaDB in Docker. It binds WordPress to loopback by default. Set `NAT_WP_BIND_ADDRESS` and `NAT_WP_URL` in the ignored `.env` file when a trusted remote device needs access.
 
 ```bash
 cp .env.example .env
 bash scripts/sandbox-up.sh
 ```
 
-The default URL is `http://note-devbox.tailac4262.ts.net:8097`.
+The default URL is `http://127.0.0.1:8097`.
 
 Useful commands:
 

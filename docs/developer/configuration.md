@@ -4,7 +4,7 @@ Noteware Admin Tables reads site choices from a site plugin or must-use plugin. 
 
 ## Configuration contract
 
-Use the `noteware_admin_tables_config` filter. Return an array keyed by a public post type that has an admin user interface.
+Use the `noteware_admin_tables_config` filter. Return an array keyed by an existing post type that has an admin user interface.
 
 ```php
 <?php

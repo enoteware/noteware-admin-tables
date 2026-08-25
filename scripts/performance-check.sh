@@ -47,7 +47,7 @@ timings_file="$perf_tmp_dir/timings.txt"
 
 run=1
 while [ "$run" -le 5 ]; do
-  curl -sS \
+  curl -fsS \
     --cookie "$cookie_file" \
     --output /dev/null \
     --write-out '%{time_total}\n' \

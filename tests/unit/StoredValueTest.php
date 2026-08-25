@@ -41,6 +41,18 @@ final class StoredValueTest extends TestCase
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $stored->hash());
         self::assertSame($stored->hash(), (new StoredValue(true, '0'))->hash());
         self::assertNotSame($stored->hash(), (new StoredValue(true, 0))->hash());
-        self::assertSame($stored->hash(), (new StoredValue(true, '0', 'Resolved label'))->hash());
+        $labeled = new StoredValue(true, '0', 'Resolved label');
+        self::assertSame($stored->toArray(), $labeled->toArray());
+        self::assertTrue($stored->equals($labeled));
+        self::assertSame($stored->hash(), $labeled->hash());
+    }
+
+    public function test_hash_is_deterministic_for_non_utf8_metadata(): void
+    {
+        $stored = new StoredValue(true, "legacy\xB1value");
+
+        self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $stored->hash());
+        self::assertSame($stored->hash(), (new StoredValue(true, "legacy\xB1value"))->hash());
+        self::assertNotSame($stored->hash(), (new StoredValue(true, "legacy\xB2value"))->hash());
     }
 }

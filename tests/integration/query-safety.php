@@ -108,6 +108,10 @@ add_filter(
     20
 );
 
+if (! function_exists('acf_add_local_field_group')) {
+    WP_CLI::error('Query safety assertions require Advanced Custom Fields to be active.');
+}
+
 acf_add_local_field_group(
     array(
         'key'      => 'group_nat_test_query_selects',

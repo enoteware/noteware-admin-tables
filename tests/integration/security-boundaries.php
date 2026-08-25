@@ -430,6 +430,32 @@ foreach ($invalid_requests as $invalid_request) {
     $assert($before_count === $audit_count(), 'An invalid edit payload must not append an audit row.');
 }
 
+// Typed adapters must receive the canonical unslashed input before validation.
+foreach (
+    array(
+        'nat_test_number' => '12<script>5</script>',
+        'nat_test_select' => 'alpha%20',
+        'nat_test_date'   => '2026-01-01%20',
+    ) as $column_key => $invalid_value
+) {
+    $typed_column = $configuration->column('nat_demo_record', $column_key);
+    if (null === $typed_column) {
+        $failures[] = sprintf('The %s test column is unavailable.', $column_key);
+        continue;
+    }
+    $typed_adapter = $adapters->get($typed_column->source);
+    $typed_before  = $typed_adapter->read($post_id, $typed_column);
+    $typed_count   = $audit_count();
+    $expect_failure(
+        static fn (): array => $controller->processEdit(
+            $edit_request($column_key, $invalid_value, $typed_before->hash())
+        ),
+        sprintf('The %s adapter must reject input that only becomes valid after generic text sanitization.', $column_key)
+    );
+    $assert($typed_before->equals($typed_adapter->read($post_id, $typed_column)), 'Rejected typed input must not write.');
+    $assert($typed_count === $audit_count(), 'Rejected typed input must not append an audit row.');
+}
+
 // A stale edit snapshot must not overwrite a newer external change.
 $stale_snapshot = $note_state()->hash();
 update_post_meta($post_id, $note_column->field, 'External newer value');
@@ -511,7 +537,7 @@ $assert($rollback_count === $audit_count(), 'An audit insert failure must not ap
 
 // Leave the reusable fixture deterministic for later browser runs.
 if ($original_state->exists) {
-    update_post_meta($post_id, $note_column->field, $original_value);
+    update_post_meta($post_id, $note_column->field, wp_slash($original_value));
 } else {
     delete_post_meta($post_id, $note_column->field);
 }

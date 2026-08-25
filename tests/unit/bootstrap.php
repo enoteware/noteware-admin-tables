@@ -46,3 +46,24 @@ if (! function_exists('sanitize_text_field')) {
         return trim(strip_tags($value));
     }
 }
+
+if (! function_exists('__')) {
+    function __(string $value): string
+    {
+        return $value;
+    }
+}
+
+if (! function_exists('esc_html')) {
+    function esc_html(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
+
+if (! function_exists('esc_html__')) {
+    function esc_html__(string $value): string
+    {
+        return esc_html($value);
+    }
+}
