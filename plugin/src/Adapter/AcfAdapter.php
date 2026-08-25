@@ -60,6 +60,10 @@ final class AcfAdapter implements FieldAdapter
         $supported = is_array($field)
             && isset($types[$column->type], $field['type'])
             && $types[$column->type] === $field['type'];
+        if ($supported && 'select' === $column->type) {
+            $supported = empty($field['multiple'])
+                && (! isset($field['return_format']) || 'value' === $field['return_format']);
+        }
         $this->supportCache[$cacheKey] = $supported;
         return $supported;
     }

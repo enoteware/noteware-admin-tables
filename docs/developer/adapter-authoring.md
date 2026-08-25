@@ -15,7 +15,7 @@ A display adapter must:
 
 Unknown types are read-only and render a safe empty state. A missing integration must not cause a fatal error.
 
-ACF display adapters use documented ACF functions. They verify the field type before formatting. Select labels come from the field's choice map. Image output uses WordPress attachment functions and batch-preloaded attachment data.
+ACF display adapters use documented ACF functions. They verify the field type before formatting. The first milestone accepts only single-value ACF selects with the `value` return format. Multiple and array-return selects fail closed. Select labels come from the field's choice map. Image output uses WordPress attachment functions and batch-preloaded attachment data.
 
 ## Editable adapter requirements
 

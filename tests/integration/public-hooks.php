@@ -72,6 +72,60 @@ if (isset($posts_by_index[11])) {
     $assert('' === (string) get_field('nat_demo_text', $posts_by_index[11]), 'Stored empty ACF text must remain empty.');
 }
 
+if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
+    acf_add_local_field_group(
+        array(
+            'key'      => 'group_nat_test_unsupported_selects',
+            'title'    => 'Unsupported select test fields',
+            'fields'   => array(
+                array(
+                    'key'           => 'field_nat_test_multiple_select',
+                    'label'         => 'Multiple select',
+                    'name'          => 'nat_test_multiple_select',
+                    'type'          => 'select',
+                    'choices'       => array('alpha' => 'Alpha'),
+                    'multiple'      => 1,
+                    'return_format' => 'value',
+                ),
+                array(
+                    'key'           => 'field_nat_test_array_select',
+                    'label'         => 'Array select',
+                    'name'          => 'nat_test_array_select',
+                    'type'          => 'select',
+                    'choices'       => array('alpha' => 'Alpha'),
+                    'multiple'      => 0,
+                    'return_format' => 'array',
+                ),
+            ),
+            'location' => array(),
+        )
+    );
+
+    foreach (
+        array(
+            array('key' => 'multiple_select', 'field' => 'nat_test_multiple_select', 'field_key' => 'field_nat_test_multiple_select'),
+            array('key' => 'array_select', 'field' => 'nat_test_array_select', 'field_key' => 'field_nat_test_array_select'),
+        ) as $unsupported_select
+    ) {
+        $column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+            array_merge(
+                $unsupported_select,
+                array(
+                    'label'      => 'Unsupported select',
+                    'source'     => 'acf',
+                    'type'       => 'select',
+                    'sortable'   => false,
+                    'filterable' => false,
+                    'editable'   => false,
+                    'choices'    => array('alpha' => 'Alpha'),
+                )
+            )
+        );
+        $stored = (new Noteware\AdminTables\Adapter\AcfAdapter())->read($posts_by_index[1], $column);
+        $assert(! $stored->exists, sprintf('%s must fail closed instead of returning an array value.', $unsupported_select['key']));
+    }
+}
+
 if ($failures) {
     foreach ($failures as $failure) {
         WP_CLI::warning($failure);
