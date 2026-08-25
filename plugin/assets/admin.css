@@ -57,13 +57,3 @@
     outline: 2px solid #2271b1;
     outline-offset: 2px;
 }
-
-@media (prefers-color-scheme: dark) {
-    .nat-empty {
-        color: #c3c4c7;
-    }
-
-    .nat-error {
-        color: #ff8a8a;
-    }
-}

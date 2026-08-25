@@ -40,6 +40,8 @@ add_filter(
 
 `source` accepts `native`, `meta`, or `acf`. The supported first-milestone types are `text`, `number`, `boolean`, `select`, `date`, and `image`. Every ACF definition must include its public `field_key` so the adapter can confirm the real field type. ACF columns are display-only in this milestone. Only allowlisted WordPress metadata scalar types may set `editable` to `true`.
 
+A filterable or editable `select` must define at least one bounded scalar entry in `choices`. Invalid empty behavior configuration is rejected instead of rendering a control that cannot accept a value.
+
 ## Safety rules
 
 - Start every field as read-only.

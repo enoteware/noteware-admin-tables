@@ -34,6 +34,8 @@ Use `WP_Query` and `WP_Meta_Query` arguments. If a custom audit query is needed,
 
 Plugin metadata filters are grouped with `AND`. The plugin then combines that group with a pre-existing metadata query through a top-level `AND`, so an existing `OR` query keeps its meaning. Decimal values use a bounded fixed-precision cast rather than an integer-like numeric cast.
 
+Metadata sort plans use `meta_query`, which makes WordPress core group results by post ID. A real-query regression proves that pre-existing duplicate metadata rows do not repeat a post or displace another post at a pagination boundary.
+
 ## Audit and undo
 
 Audit rows are append-only. An edit fails if its audit record cannot be written. Undo checks current authorization and refuses to overwrite a value that no longer matches the original edit.

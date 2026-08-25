@@ -22,6 +22,34 @@ final class ColumnDefinitionTest extends TestCase
         self::assertFalse($column->editable);
     }
 
+    public function test_select_choice_rules_keep_read_only_display_available(): void
+    {
+        $displayOnly = ColumnDefinition::fromArray(
+            array('key' => 'state', 'label' => 'State', 'source' => 'meta', 'type' => 'select', 'field' => 'state')
+        );
+        $filterable = ColumnDefinition::fromArray(
+            array(
+                'key'        => 'state',
+                'label'      => 'State',
+                'source'     => 'meta',
+                'type'       => 'select',
+                'field'      => 'state',
+                'filterable' => true,
+                'choices'    => array('open' => 'Open'),
+            )
+        );
+
+        self::assertSame(array(), $displayOnly->choices);
+        self::assertTrue($filterable->filterable);
+        self::assertSame(array('open' => 'Open'), $filterable->choices);
+    }
+
+    public function test_direct_constructor_cannot_bypass_select_choice_rules(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new ColumnDefinition('state', 'State', 'meta', 'select', 'state', null, false, true, false, array(), 'Not set');
+    }
+
     #[DataProvider('invalidDefinitions')]
     public function test_invalid_or_unsafe_definitions_are_rejected(array $definition): void
     {
@@ -45,5 +73,7 @@ final class ColumnDefinitionTest extends TestCase
         yield 'unsupported native sort' => array(array_replace($base, array('source' => 'native', 'field' => 'status', 'type' => 'select', 'sortable' => true)));
         yield 'acf write without field key' => array(array_replace($base, array('source' => 'acf', 'editable' => true)));
         yield 'image write' => array(array_replace($base, array('type' => 'image', 'editable' => true)));
+        yield 'filterable select without choices' => array(array_replace($base, array('type' => 'select', 'filterable' => true)));
+        yield 'editable select without choices' => array(array_replace($base, array('type' => 'select', 'editable' => true)));
     }
 }

@@ -174,4 +174,45 @@ test.describe('generic admin-table vertical slice', () => {
 
 		expect(results.violations).toEqual([]);
 	});
+
+	test('keeps plugin contrast when the OS prefers dark mode', async ({
+		page,
+	}) => {
+		await page.emulateMedia({ colorScheme: 'dark' });
+		await page.goto(
+			'/wp-admin/edit.php?post_type=nat_demo_record&nat_filter_nat_demo_text=Text%2010'
+		);
+
+		const empty = page.locator('.wp-list-table .nat-empty').first();
+		await expect(empty).toBeVisible();
+		await expect(empty).toHaveCSS('color', 'rgb(80, 87, 94)');
+
+		const cell = page
+			.locator('.nat-cell[data-column="nat_demo_note"]')
+			.first();
+		await cell.getByRole('button', { name: 'Edit' }).click();
+		await cell.locator('input[name="nonce"]').evaluate((field) => {
+			field.value = 'invalid';
+		});
+		await cell
+			.locator('input[name="value"]')
+			.fill('Rejected contrast value');
+		await cell.getByRole('button', { name: 'Save' }).click();
+		await expect(cell.locator('.nat-error')).toBeVisible();
+		await expect(cell.locator('.nat-error')).toHaveCSS(
+			'color',
+			'rgb(179, 45, 46)'
+		);
+		await page.screenshot({
+			path: 'tests/artifacts/admin-table-dark-os-preference.png',
+			fullPage: true,
+		});
+
+		const results = await new AxeBuilder({ page })
+			.include('.wp-list-table')
+			.withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
+			.analyze();
+
+		expect(results.violations).toEqual([]);
+	});
 });

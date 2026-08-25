@@ -65,6 +65,9 @@ final class ColumnDefinition
         if ($editable && ('meta' !== $source || ! in_array($type, array('text', 'number', 'boolean', 'select', 'date'), true))) {
             throw new InvalidArgumentException('Only allowlisted scalar WordPress metadata fields are editable.');
         }
+        if ('select' === $type && ($filterable || $editable) && ! $choices) {
+            throw new InvalidArgumentException('Filterable or editable select columns require at least one configured choice.');
+        }
     }
 
     /**
@@ -107,6 +110,9 @@ final class ColumnDefinition
             throw new InvalidArgumentException('A column cannot define more than 200 choices.');
         }
 
+        $filterable = (bool) ($data['filterable'] ?? false);
+        $editable   = (bool) ($data['editable'] ?? false);
+
         return new self(
             (string) ($data['key'] ?? ''),
             (string) ($data['label'] ?? ''),
@@ -115,8 +121,8 @@ final class ColumnDefinition
             (string) ($data['field'] ?? ''),
             isset($data['field_key']) && is_string($data['field_key']) ? $data['field_key'] : null,
             (bool) ($data['sortable'] ?? false),
-            (bool) ($data['filterable'] ?? false),
-            (bool) ($data['editable'] ?? false),
+            $filterable,
+            $editable,
             $choices,
             (string) ($data['empty_label'] ?? 'Not set')
         );

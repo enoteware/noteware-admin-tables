@@ -29,6 +29,8 @@ Metadata sorting uses a named value clause plus an alternate `NOT EXISTS` clause
 
 Plugin metadata filters use their own `AND` group. That group is combined with any pre-existing metadata query through a new top-level `AND`, preserving an existing `OR` relation instead of appending to and broadening it. Numeric metadata uses a bounded fixed-precision decimal cast. Boolean and compact ACF dates use unsigned integer casts.
 
+Every metadata sort supplies a `meta_query`. WordPress core groups such queries by the post ID, so duplicate metadata rows do not repeat a post or consume another post's pagination slot. A real-query regression protects this core integration without adding a second distinct or grouping filter.
+
 ## Consequences
 
 - Query safety can be tested without issuing SQL.

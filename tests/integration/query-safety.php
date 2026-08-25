@@ -346,6 +346,42 @@ if (2 === count($fixture_ids)) {
         }
     }
 
+    // A duplicate sort-key row must not duplicate a post or consume a page slot.
+    $duplicate_sort_id    = $fixture_by_index[37];
+    $duplicate_sort_value = 'Duplicate sort row';
+    $duplicate_sort_meta_id = add_post_meta($duplicate_sort_id, 'nat_demo_note', $duplicate_sort_value, false);
+    $assert(is_int($duplicate_sort_meta_id) && $duplicate_sort_meta_id > 0, 'Duplicate-sort assertions require a second metadata row.');
+    try {
+        set_current_screen('edit-nat_demo_record');
+        $_GET = array();
+        $duplicate_sort_query = new WP_Query();
+        $GLOBALS['wp_the_query'] = $duplicate_sort_query;
+        $GLOBALS['wp_query']     = $duplicate_sort_query;
+        $duplicate_sort_query->query(
+            array(
+                'post_type'      => 'nat_demo_record',
+                'post_status'    => 'publish',
+                'post__in'       => array_map('intval', $fixture_ids),
+                'posts_per_page' => 2,
+                'fields'         => 'ids',
+                'orderby'        => 'nat_nat_demo_note',
+                'no_found_rows'  => false,
+            )
+        );
+        $duplicate_sort_ids = array_map('intval', $duplicate_sort_query->posts);
+        sort($duplicate_sort_ids);
+        $expected_sort_ids = array_map('intval', $fixture_ids);
+        sort($expected_sort_ids);
+        $assert($expected_sort_ids === $duplicate_sort_ids, 'Metadata sorting must return each post once when a sort key has duplicate rows.');
+        $assert(2 === (int) $duplicate_sort_query->found_posts, 'Duplicate sort rows must not inflate the unique pagination count.');
+        global $wpdb;
+        $assert(str_contains($duplicate_sort_query->request, 'GROUP BY ' . $wpdb->posts . '.ID'), 'WordPress must group metadata sort results by post ID.');
+    } finally {
+        if (is_int($duplicate_sort_meta_id)) {
+            delete_metadata_by_mid('post', $duplicate_sort_meta_id);
+        }
+    }
+
     // Plugin filters must narrow, never broaden, a pre-existing OR metadata query.
     set_current_screen('edit-nat_demo_record');
     $_GET = array('nat_filter_nat_demo_note' => 'Note 38');
@@ -457,4 +493,4 @@ if ($failures) {
     WP_CLI::error(sprintf('%d query safety assertion(s) failed.', count($failures)));
 }
 
-WP_CLI::success('Exact decimal filters, preserved query relations, sparse sorting, screen-scoped preloading, native fail-closed rules, warnings, escaping, and the five-filter cap passed.');
+WP_CLI::success('Exact decimal filters, preserved query relations, deduplicated sparse sorting, screen-scoped preloading, native fail-closed rules, warnings, escaping, and the five-filter cap passed.');

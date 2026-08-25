@@ -20,6 +20,64 @@ $assert(post_type_exists('nat_demo_record'), 'The generic fixture post type must
 $assert(has_action('wp_ajax_nat_inline_edit'), 'The inline-edit AJAX action must be registered.');
 $assert(has_action('wp_ajax_nat_undo_edit'), 'The undo AJAX action must be registered.');
 
+// Core fires the dynamic post-type action for pages after the general hierarchical action.
+add_filter(
+    'noteware_admin_tables_config',
+    static function (array $configuration): array {
+        $configuration['page'] = array(
+            'columns' => array(
+                array(
+                    'key'        => 'nat_test_page_note',
+                    'label'      => 'Test page note',
+                    'source'     => 'meta',
+                    'type'       => 'text',
+                    'field'      => 'nat_test_page_note',
+                    'sortable'   => false,
+                    'filterable' => false,
+                    'editable'   => false,
+                    'choices'    => array(),
+                ),
+            ),
+        );
+        return $configuration;
+    },
+    30
+);
+set_current_screen('edit-page');
+$page_screen = get_current_screen();
+$assert($page_screen instanceof WP_Screen, 'The page hook assertion requires the page edit screen.');
+if ($page_screen instanceof WP_Screen) {
+    $assert(has_action('manage_page_posts_custom_column'), 'Configured pages must use the documented dynamic page custom-column action.');
+    $assert(! has_action('manage_pages_custom_column'), 'The plugin must not register both page actions and render each cell twice.');
+
+    $page_id = wp_insert_post(
+        array(
+            'post_type'   => 'page',
+            'post_status' => 'draft',
+            'post_title'  => 'Generic page hook fixture',
+        )
+    );
+    $assert(is_int($page_id) && $page_id > 0, 'The page hook assertion requires one generic page fixture.');
+    if (is_int($page_id) && $page_id > 0) {
+        update_post_meta($page_id, 'nat_test_page_note', 'Page hook value');
+        if (! class_exists('WP_Posts_List_Table')) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+            require_once ABSPATH . 'wp-admin/includes/class-wp-posts-list-table.php';
+        }
+        $page_list_table = new WP_Posts_List_Table(array('screen' => $page_screen));
+        ob_start();
+        $page_list_table->column_default(get_post($page_id), 'nat_nat_test_page_note');
+        $page_cell = (string) ob_get_clean();
+        $page_value_count = substr_count($page_cell, 'Page hook value');
+        $assert(
+            1 === $page_value_count,
+            sprintf('The real Pages list-table dispatcher must render configured cell content exactly once; observed %d in %s.', $page_value_count, wp_strip_all_tags($page_cell))
+        );
+        wp_delete_post($page_id, true);
+    }
+}
+set_current_screen();
+
 $config = apply_filters('noteware_admin_tables_config', array());
 $assert(isset($config['nat_demo_record']['columns']), 'The public configuration filter must return demo columns.');
 

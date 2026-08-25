@@ -30,6 +30,8 @@ Every query change must pass all of these gates:
 
 The registry does not replace `WP_List_Table`. It does not discover screens by running database queries. Unsupported screens remain unchanged.
 
+The plugin uses the documented dynamic post-type cell action. WordPress core fires this action for posts, pages, and custom post types. It fires `manage_page_posts_custom_column` for pages after the general hierarchical action, so registering both actions would render Page cells twice.
+
 ## Consequences
 
 - Core WordPress keeps ownership of pagination, row actions, bulk actions, and screen options.
