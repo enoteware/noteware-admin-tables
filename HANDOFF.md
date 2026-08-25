@@ -22,8 +22,12 @@ The plugin now provides external post-screen configuration, native and metadata 
 
 ## Pull request
 
-The public pull request is not open yet. Add its full URL, final head SHA, CI results, and per-reviewer status here after the first push.
+The public pull request is open:
+
+https://github.com/enoteware/noteware-admin-tables/pull/1
+
+GitHub is the live source for the current head SHA, CI results, and automated-review status. The branch remains unmerged.
 
 ## Next action
 
-Run the final local gate, commit and push the branch, open the public pull request, then follow `ship-codex` until CI and every available automated reviewer cover the current head. Do not merge without Elliot's explicit approval.
+Follow `ship-codex` until CI and every available automated reviewer cover the current head. Fix or answer every finding with evidence. Do not merge without Elliot's explicit approval.
