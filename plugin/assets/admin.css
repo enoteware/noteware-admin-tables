@@ -1,0 +1,59 @@
+.nat-cell {
+    min-width: 9rem;
+}
+
+.nat-thumbnail {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+}
+
+.nat-empty {
+    color: #50575e;
+    font-style: italic;
+}
+
+.nat-edit-button,
+.nat-undo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 2px 4px;
+    margin-top: 0.25rem;
+}
+
+.nat-inline-editor {
+    margin-top: 0.4rem;
+}
+
+.nat-inline-editor[hidden] {
+    display: none;
+}
+
+.nat-inline-editor input[type="text"],
+.nat-inline-editor input[type="number"],
+.nat-inline-editor input[type="date"],
+.nat-inline-editor select {
+    width: 100%;
+    max-width: 14rem;
+}
+
+.nat-remove,
+.nat-status {
+    display: block;
+    margin: 0.35rem 0;
+}
+
+.nat-error {
+    color: #b32d2e;
+    font-weight: 600;
+}
+
+.nat-edit-button:focus-visible,
+.nat-undo:focus-visible,
+.nat-inline-editor :focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}

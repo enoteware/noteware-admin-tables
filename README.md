@@ -4,6 +4,10 @@ Noteware Admin Tables is an open-source WordPress plugin for building useful adm
 
 The project is in early development. It is not ready for production sites yet.
 
+## Supported versions
+
+The first review milestone targets WordPress 6.5 or later and PHP 8.1 or later. The continuous integration matrix checks the minimum versions and the current supported versions. A passing current-version sandbox does not replace the minimum-version checks.
+
 ## Project principles
 
 - Build original, clean-room code from public WordPress APIs and documented behavior.
@@ -29,14 +33,14 @@ See [ROADMAP.md](ROADMAP.md) for the delivery plan and boundaries.
 
 ## Local WordPress sandbox
 
-The sandbox runs WordPress and MariaDB in Docker. It binds WordPress to the DevBox Tailscale address only.
+The sandbox runs WordPress and MariaDB in Docker. It binds WordPress to loopback by default. Set `NAT_WP_BIND_ADDRESS` and `NAT_WP_URL` in the ignored `.env` file when a trusted remote device needs access.
 
 ```bash
 cp .env.example .env
 bash scripts/sandbox-up.sh
 ```
 
-The default URL is `http://note-devbox.tailac4262.ts.net:8097`.
+The default URL is `http://127.0.0.1:8097`.
 
 Useful commands:
 
@@ -52,6 +56,15 @@ Do not commit `.env`. It contains local sandbox credentials.
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Security reports follow [SECURITY.md](SECURITY.md).
+
+Developer documentation:
+
+- [Site configuration](docs/developer/configuration.md)
+- [Adapter authoring](docs/developer/adapter-authoring.md)
+- [Testing and sandbox proof](docs/developer/testing.md)
+- [Security and performance checks](docs/developer/security-performance.md)
+- [Clean-room development record](docs/clean-room.md)
+- [Architecture decisions](docs/adr/README.md)
 
 ## License
 

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<ruleset name="Noteware Admin Tables">
+    <description>WordPress coding standards for plugin PHP.</description>
+
+    <file>plugin</file>
+    <file>tests/unit</file>
+
+    <arg name="basepath" value="."/>
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+    <arg name="parallel" value="8"/>
+    <arg name="warning-severity" value="0"/>
+    <arg value="ps"/>
+
+    <config name="testVersion" value="8.1-"/>
+    <rule ref="PSR12">
+        <exclude name="PSR1.Files.SideEffects.FoundWithSymbols"/>
+        <exclude name="PSR1.Methods.CamelCapsMethodName"/>
+        <exclude name="PSR12.Files.FileHeader.SpacingAfterBlock"/>
+    </rule>
+    <rule ref="WordPress.Security.EscapeOutput"/>
+    <rule ref="WordPress.Security.NonceVerification"/>
+    <rule ref="WordPress.Security.ValidatedSanitizedInput"/>
+    <rule ref="WordPress.DB.PreparedSQL"/>
+
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+</ruleset>
