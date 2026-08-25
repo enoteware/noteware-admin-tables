@@ -103,6 +103,17 @@ add_filter(
             'editable'   => false,
             'choices'    => array('alpha' => 'Alpha'),
         );
+        $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_encoded_select',
+            'label'      => 'Test encoded select',
+            'source'     => 'meta',
+            'type'       => 'select',
+            'field'      => 'nat_test_encoded_select',
+            'sortable'   => false,
+            'filterable' => true,
+            'editable'   => false,
+            'choices'    => array('alpha' => 'Plain choice', 'alpha%20' => 'Encoded choice'),
+        );
         return $config;
     },
     20
@@ -224,6 +235,77 @@ $assert(str_contains($filter_markup, 'nat_filter_nat_demo_choice'), 'A supported
 $assert(! str_contains($filter_markup, 'nat_filter_nat_test_multiple_select'), 'A multiple ACF select must not expose a filter control.');
 $assert(! str_contains($filter_markup, 'nat_filter_nat_test_array_select'), 'An array-return ACF select must not expose a filter control.');
 $assert(! str_contains($filter_markup, 'nat_filter_nat_test_mismatched_field'), 'A mismatched ACF field key must not expose a filter control.');
+
+// Choice validation must use the exact unslashed key, not a destructive text sanitizer.
+$encoded_fixture_ids = get_posts(
+    array(
+        'post_type'      => 'nat_demo_record',
+        'post_status'    => 'publish',
+        'posts_per_page' => 2,
+        'fields'         => 'ids',
+        'meta_query'     => array(
+            array(
+                'key'     => '_nat_fixture_index',
+                'value'   => array(37, 38),
+                'compare' => 'IN',
+                'type'    => 'NUMERIC',
+            ),
+        ),
+    )
+);
+$assert(2 === count($encoded_fixture_ids), 'Encoded-choice assertions require fixture records 37 and 38.');
+$_GET = array('post_type' => 'nat_demo_record', 'nat_filter_nat_test_encoded_select' => 'alpha%20');
+$encoded_select_query = new WP_Query();
+$encoded_select_query->set('post_type', 'nat_demo_record');
+$GLOBALS['wp_the_query'] = $encoded_select_query;
+$GLOBALS['wp_query']     = $encoded_select_query;
+$controller->apply($encoded_select_query);
+$encoded_meta_query = $encoded_select_query->get('meta_query');
+$encoded_clause     = is_array($encoded_meta_query) ? ($encoded_meta_query[0] ?? array()) : array();
+$assert('alpha%20' === ($encoded_clause['value'] ?? null), 'A configured percent-bearing choice key must reach the exact metadata query unchanged.');
+ob_start();
+$screen_controller->renderFilters('nat_demo_record');
+$encoded_filter_markup = (string) ob_get_clean();
+$assert(str_contains($encoded_filter_markup, 'value="alpha%20" selected'), 'A configured percent-bearing choice must remain selected in the filter control.');
+
+if (2 === count($encoded_fixture_ids)) {
+    update_post_meta((int) $encoded_fixture_ids[0], 'nat_test_encoded_select', 'alpha%20');
+    update_post_meta((int) $encoded_fixture_ids[1], 'nat_test_encoded_select', 'alpha');
+    try {
+        $encoded_result_query = new WP_Query(
+            array(
+                'post_type'      => 'nat_demo_record',
+                'post_status'    => 'publish',
+                'post__in'       => array_map('intval', $encoded_fixture_ids),
+                'posts_per_page' => 2,
+                'fields'         => 'ids',
+                'meta_query'     => $encoded_meta_query,
+                'no_found_rows'  => true,
+            )
+        );
+        $assert(array((int) $encoded_fixture_ids[0]) === array_map('intval', $encoded_result_query->posts), 'Exact encoded-choice filtering must not alias the separate plain choice.');
+    } finally {
+        foreach ($encoded_fixture_ids as $encoded_fixture_id) {
+            delete_post_meta((int) $encoded_fixture_id, 'nat_test_encoded_select');
+        }
+    }
+}
+
+$_GET = array('nat_filter_nat_test_encoded_select' => 'not-allowed');
+$unknown_select_query = new WP_Query();
+$unknown_select_query->set('post_type', 'nat_demo_record');
+$GLOBALS['wp_the_query'] = $unknown_select_query;
+$GLOBALS['wp_query']     = $unknown_select_query;
+$controller->apply($unknown_select_query);
+$assert(array(0) === $unknown_select_query->get('post__in'), 'An unknown select key must still fail closed.');
+
+$_GET = array('nat_filter_nat_demo_date' => '2024-02-07%20');
+$invalid_date_query = new WP_Query();
+$invalid_date_query->set('post_type', 'nat_demo_record');
+$GLOBALS['wp_the_query'] = $invalid_date_query;
+$GLOBALS['wp_query']     = $invalid_date_query;
+$controller->apply($invalid_date_query);
+$assert(array(0) === $invalid_date_query->get('post__in'), 'A date suffix that text sanitization could remove must fail closed.');
 
 // Invalid native filters must fail closed instead of silently returning an unfiltered list.
 foreach (

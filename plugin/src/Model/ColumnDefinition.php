@@ -71,6 +71,9 @@ final class ColumnDefinition
         if ('select' === $type && ($filterable || $editable) && ! $choices) {
             throw new InvalidArgumentException('Filterable or editable select columns require at least one configured choice.');
         }
+        if ('select' === $type && $filterable && array_key_exists('', $choices)) {
+            throw new InvalidArgumentException('Filterable select columns cannot use an empty choice value.');
+        }
     }
 
     /**

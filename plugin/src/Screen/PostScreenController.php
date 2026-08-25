@@ -158,7 +158,7 @@ final class PostScreenController
                 continue;
             }
             $name     = 'nat_filter_' . $column->key;
-            $selected = isset($_GET[$name]) && is_string($_GET[$name]) ? sanitize_text_field(wp_unslash($_GET[$name])) : '';
+            $selected = $this->selectedFilterValue($name);
             echo '<label class="screen-reader-text" for="' . esc_attr($name) . '">' . esc_html(sprintf(__('Filter by %s', 'noteware-admin-tables'), $column->label)) . '</label>';
             if (in_array($column->type, array('boolean', 'select'), true)) {
                 $choices = 'boolean' === $column->type ? array('1' => __('Yes', 'noteware-admin-tables'), '0' => __('No', 'noteware-admin-tables')) : $column->choices;
@@ -182,6 +182,16 @@ final class PostScreenController
         wp_enqueue_style('noteware-admin-tables', plugins_url('assets/admin.css', NAT_PLUGIN_FILE), array(), NAT_VERSION);
         wp_enqueue_script('noteware-admin-tables', plugins_url('assets/admin.js', NAT_PLUGIN_FILE), array(), NAT_VERSION, true);
         wp_localize_script('noteware-admin-tables', 'natAdminTables', array('ajaxUrl' => admin_url('admin-ajax.php')));
+    }
+
+    private function selectedFilterValue(string $name): string
+    {
+        if (! isset($_GET[$name]) || ! is_string($_GET[$name])) {
+            return '';
+        }
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Exact choice keys are escaped at the HTML boundary.
+        $value = wp_unslash($_GET[$name]);
+        return strlen($value) <= 10000 ? $value : '';
     }
 
     private function currentPostType(): string

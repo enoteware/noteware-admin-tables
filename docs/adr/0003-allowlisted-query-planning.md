@@ -19,6 +19,8 @@ The first milestone supports exact scalar filters. Parsers enforce these rules:
 - Date uses a strict `Y-m-d` input shape and a real calendar date.
 - Choice is an exact key from the configured choice map.
 
+Request values are unslashed and then passed to the typed parser. The query boundary does not run a general text sanitizer before number, boolean, date, or choice validation because that could turn an invalid input into a different valid value. Text parsing owns its own sanitization. Filterable selects reserve the empty request value for the `All` option, so their configured choice keys cannot be empty.
+
 Sort direction accepts only `ASC` or `DESC`. Metadata comparison and cast values come from the field type, not the request. Native columns map to documented `WP_Query` order and filter arguments. Metadata columns map to named `meta_query` clauses with trusted keys and fixed comparison types.
 
 The planner never accepts raw SQL, a request metadata key, a callback, or a free-form operator. Invalid input forces an empty result with `post__in` set to `[0]` and shows an admin error. It does not fall back to a broader query.

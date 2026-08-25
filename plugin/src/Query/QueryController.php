@@ -83,7 +83,8 @@ final class QueryController
                 continue;
             }
             try {
-                $value = ValueValidator::validate($column, sanitize_text_field(wp_unslash($_GET[$parameter])));
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The typed validator must see the exact unslashed value and sanitizes text itself.
+                $value = ValueValidator::validate($column, wp_unslash($_GET[$parameter]));
             } catch (InvalidArgumentException) {
                 $this->rejectFilter($query, $column);
                 continue;

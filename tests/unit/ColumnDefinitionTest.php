@@ -38,16 +38,35 @@ final class ColumnDefinitionTest extends TestCase
                 'choices'    => array('open' => 'Open'),
             )
         );
+        $editableEmpty = ColumnDefinition::fromArray(
+            array(
+                'key'     => 'state',
+                'label'   => 'State',
+                'source'  => 'meta',
+                'type'    => 'select',
+                'field'   => 'state',
+                'editable' => true,
+                'choices' => array('' => 'Empty'),
+            )
+        );
 
         self::assertSame(array(), $displayOnly->choices);
         self::assertTrue($filterable->filterable);
         self::assertSame(array('open' => 'Open'), $filterable->choices);
+        self::assertTrue($editableEmpty->editable);
+        self::assertSame(array('' => 'Empty'), $editableEmpty->choices);
     }
 
     public function test_direct_constructor_cannot_bypass_select_choice_rules(): void
     {
         $this->expectException(InvalidArgumentException::class);
         new ColumnDefinition('state', 'State', 'meta', 'select', 'state', null, false, true, false, array(), 'Not set');
+    }
+
+    public function test_direct_constructor_rejects_empty_filter_choice_values(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new ColumnDefinition('state', 'State', 'meta', 'select', 'state', null, false, true, false, array('' => 'Empty'), 'Not set');
     }
 
     public function test_direct_constructor_cannot_make_images_filterable(): void
@@ -81,6 +100,7 @@ final class ColumnDefinitionTest extends TestCase
         yield 'image write' => array(array_replace($base, array('type' => 'image', 'editable' => true)));
         yield 'image filter' => array(array_replace($base, array('type' => 'image', 'filterable' => true)));
         yield 'filterable select without choices' => array(array_replace($base, array('type' => 'select', 'filterable' => true)));
+        yield 'filterable select with empty choice value' => array(array_replace($base, array('type' => 'select', 'filterable' => true, 'choices' => array('' => 'Empty'))));
         yield 'editable select without choices' => array(array_replace($base, array('type' => 'select', 'editable' => true)));
     }
 }
