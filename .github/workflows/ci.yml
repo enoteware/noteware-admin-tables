@@ -10,10 +10,12 @@ permissions:
   contents: read
 
 jobs:
-  php-syntax:
-    name: PHP syntax
+  php-quality:
+    name: PHP ${{ matrix.php-version }} quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
         php-version:
           - "8.1"
@@ -24,13 +26,140 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           coverage: none
+          tools: composer:v2
+      - name: Validate Composer metadata
+        run: composer validate --strict
+      - name: Install PHP tools
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Audit PHP dependencies
+        run: composer audit --locked --no-interaction
       - name: Check PHP syntax
-        run: find plugin -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+        run: composer run lint
+      - name: Check WordPress coding standards
+        run: composer run cs
+      - name: Run static analysis
+        run: composer run analyse
+      - name: Run PHP unit tests
+        run: composer run test:unit
+
+  javascript:
+    name: JavaScript checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install JavaScript tools
+        run: npm ci
+      - name: Lint JavaScript
+        run: npm run lint
+      - name: Run JavaScript unit tests
+        run: npm test
+      - name: Audit JavaScript tooling dependencies
+        run: npm run audit
+      - name: Report dependency licenses
+        run: npm run check:licenses
+
+  clean-room:
+    name: Clean-room and secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan tracked project content
+        run: bash scripts/clean-room-check.sh
 
   sandbox-config:
     name: Sandbox configuration
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Validate Docker Compose configuration
-        run: cp .env.example .env && sed -i 's/replace-with-[^ ]*/local-ci-value/g' .env && docker compose config --quiet
+        run: |
+          cp .env.example .env
+          sed -i 's/replace-with-[^ ]*/local-ci-value/g' .env
+          sed -i 's/^NAT_WP_BIND_ADDRESS=.*/NAT_WP_BIND_ADDRESS=127.0.0.1/' .env
+          sed -i 's|^NAT_WP_URL=.*|NAT_WP_URL=http://127.0.0.1:8097|' .env
+          docker compose config --quiet
+
+  sandbox-integration:
+    name: Sandbox, integration, performance, and browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs:
+      - php-quality
+      - javascript
+      - sandbox-config
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Prepare local-only sandbox settings
+        run: |
+          cp .env.example .env
+          sed -i 's/replace-with-[^ ]*/local-ci-value/g' .env
+          sed -i 's/^NAT_WP_BIND_ADDRESS=.*/NAT_WP_BIND_ADDRESS=127.0.0.1/' .env
+          sed -i 's|^NAT_WP_URL=.*|NAT_WP_URL=http://127.0.0.1:8097|' .env
+      - name: Install browser tools
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Start and seed WordPress
+        run: bash scripts/sandbox-up.sh
+      - name: Run WordPress integration assertions
+        run: bash scripts/test-integration.sh
+      - name: Run 10k-record performance budgets
+        run: bash scripts/performance-check.sh
+      - name: Run browser checks
+        run: |
+          set -a
+          . ./.env
+          set +a
+          npm run test:e2e
+      - name: Save browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence
+          path: |
+            playwright-report/
+            test-results/
+            tests/artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Stop sandbox
+        if: always()
+        run: docker compose down --volumes
+
+  wordpress-65:
+    name: WordPress 6.5 compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - php-quality
+      - sandbox-config
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare WordPress 6.5 sandbox settings
+        run: |
+          cp .env.example .env
+          sed -i 's/replace-with-[^ ]*/local-ci-value/g' .env
+          sed -i 's/^NAT_WP_BIND_ADDRESS=.*/NAT_WP_BIND_ADDRESS=127.0.0.1/' .env
+          sed -i 's|^NAT_WP_URL=.*|NAT_WP_URL=http://127.0.0.1:8097|' .env
+          sed -i 's|^NAT_WORDPRESS_IMAGE=.*|NAT_WORDPRESS_IMAGE=wordpress:6.5-php8.1-apache|' .env
+          sed -i 's|^NAT_WPCLI_IMAGE=.*|NAT_WPCLI_IMAGE=wordpress:cli-php8.1|' .env
+      - name: Start WordPress 6.5 and seed fixtures
+        run: bash scripts/sandbox-up.sh
+      - name: Confirm exact WordPress version
+        run: docker compose run --rm wpcli wp core version | grep '^6\.5'
+      - name: Run WordPress integration assertions
+        run: bash scripts/test-integration.sh
+      - name: Stop sandbox
+        if: always()
+        run: docker compose down --volumes

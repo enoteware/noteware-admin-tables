@@ -13,6 +13,8 @@ set -a
 . "$repo_dir/.env"
 set +a
 
+acf_version=${NAT_ACF_VERSION:-6.8.8}
+
 case "$NAT_WP_ADMIN_PASSWORD $NAT_DB_PASSWORD $NAT_DB_ROOT_PASSWORD" in
   *replace-with-*)
     printf '%s\n' 'Replace all placeholder passwords in .env before starting the sandbox.' >&2
@@ -44,13 +46,18 @@ fi
 
 docker compose run --rm wpcli wp plugin activate noteware-admin-tables
 
-if ! docker compose run --rm wpcli wp plugin is-installed advanced-custom-fields >/dev/null 2>&1; then
-  docker compose run --rm wpcli wp plugin install advanced-custom-fields --activate
+installed_acf_version=$(docker compose run --rm wpcli wp plugin get advanced-custom-fields --field=version 2>/dev/null || true)
+if [ "$installed_acf_version" != "$acf_version" ]; then
+  docker compose run --rm wpcli wp plugin install advanced-custom-fields \
+    --version="$acf_version" \
+    --force \
+    --activate
 else
   docker compose run --rm wpcli wp plugin activate advanced-custom-fields
 fi
 
 docker compose run --rm wpcli wp rewrite structure '/%postname%/' --hard
 docker compose run --rm wpcli wp option update blog_public 0
+bash "$repo_dir/scripts/seed-sandbox.sh"
 
 printf 'Sandbox ready: %s\n' "$NAT_WP_URL"

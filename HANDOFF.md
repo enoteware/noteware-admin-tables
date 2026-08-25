@@ -2,17 +2,28 @@
 
 ## State
 
-The public repository, clean-room roadmap, local Docker sandbox, and minimal activatable plugin are ready. No product feature implementation has started.
+The first review milestone is implemented on `feat/first-review-milestone`.
 
-## First task
+The plugin now provides external post-screen configuration, native and metadata columns, six ACF display types, typed sorting and filtering, allowlisted scalar editing, immutable audit snapshots, and conditional undo. Generic site configuration and fixture data stay in the sandbox layer outside the distributable plugin.
 
-Implement the first review milestone in `ROADMAP.md` on a feature branch. Keep this file current with the branch, pull request, checks, blockers, and next action.
+## Local proof
 
-## Required finish state
+- Composer validation, PHP syntax, PHPCS, PHPStan, and PHPUnit pass.
+- PHPUnit has 29 tests and 57 assertions.
+- WordPress integration checks exercise edit and undo success, nonces, object and field capabilities, allowlists, invalid input, stale snapshots, repeated undo, audit creation, transaction rollback, exact query comparisons, warning escaping, and the metadata-filter cost cap.
+- JavaScript lint and one Jest interaction test pass.
+- Playwright has five passing tests for display, exact sort and filter behavior, keyboard focus, edit, undo, invalid nonce, invalid-filter fail-closed behavior, and scoped WCAG checks in open and error states.
+- The 10,000-record profile renders 160 cells for 20 rows and 800 cells for 100 rows. Both runs use eight total queries, including four preload and render queries. Query growth is zero.
+- The latest local HTTP samples have a 0.105 second median and a 0.111 second maximum against a 5 second budget.
+- Composer and full npm tooling dependency audits pass. The license report covers 904 dependencies with zero blocked and zero missing declarations.
+- The full-worktree clean-room, secret-shape, and user-facing punctuation scan passes.
+- Browser screenshots are generated under `tests/artifacts/` and ignored from git. CI uploads browser evidence as an artifact.
+- An independent security and architecture review found no blockers after verifying fail-closed serializable locking, compare-and-swap writes, rollback cache invalidation, permission coverage, and query cost limits.
 
-- The first-milestone feature slice works in the sandbox.
-- Automated tests and CI pass on the current branch head.
-- A public pull request is open.
-- Available automated reviewers have reviewed the current head.
-- Findings are fixed or answered with evidence.
-- The pull request remains unmerged until Elliot explicitly approves it.
+## Pull request
+
+The public pull request is not open yet. Add its full URL, final head SHA, CI results, and per-reviewer status here after the first push.
+
+## Next action
+
+Run the final local gate, commit and push the branch, open the public pull request, then follow `ship-codex` until CI and every available automated reviewer cover the current head. Do not merge without Elliot's explicit approval.

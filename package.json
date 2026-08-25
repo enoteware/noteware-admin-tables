@@ -1,0 +1,34 @@
+{
+    "name": "noteware-admin-tables",
+    "version": "0.1.0",
+    "private": true,
+    "license": "GPL-2.0-or-later",
+    "prettier": "@wordpress/prettier-config",
+    "scripts": {
+        "lint": "eslint \"plugin/assets/**/*.js\" \"scripts/**/*.js\" \"tests/**/*.js\"",
+        "test": "jest --runInBand",
+        "audit": "npm audit --audit-level=high",
+        "check:licenses": "node scripts/license-report.js",
+        "test:e2e": "playwright test",
+        "test:e2e:headed": "playwright test --headed"
+    },
+    "jest": {
+        "testEnvironment": "jsdom",
+        "testMatch": [
+            "**/tests/js/**/*.test.js"
+        ]
+    },
+    "devDependencies": {
+        "@axe-core/playwright": "4.13.0",
+        "@playwright/test": "1.62.1",
+        "@wordpress/eslint-plugin": "25.9.0",
+        "eslint": "9.39.5",
+        "globals": "16.5.0",
+        "jest": "30.4.2",
+        "jest-environment-jsdom": "30.4.1",
+        "prettier": "3.9.6"
+    },
+    "engines": {
+        "node": ">=20 <25"
+    }
+}

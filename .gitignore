@@ -35,6 +35,12 @@ wp-config.php
 # Local sandbox settings and generated files
 /.env
 /.phpunit.result.cache
+/.phpcs-cache
+/.phpstan-cache/
+/test-results/
+/playwright-report/
+/tests/artifacts/*
+!/tests/artifacts/.gitkeep
 /vendor/
 /node_modules/
 /build/

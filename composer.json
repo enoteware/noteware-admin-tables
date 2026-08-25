@@ -1,0 +1,53 @@
+{
+    "name": "noteware/noteware-admin-tables",
+    "description": "Development tooling for the Noteware Admin Tables WordPress plugin.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.1",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^10.5",
+        "szepeviktor/phpstan-wordpress": "^2.0",
+        "wp-coding-standards/wpcs": "^3.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Noteware\\AdminTables\\": "plugin/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Noteware\\AdminTables\\Tests\\": "tests/unit/"
+        }
+    },
+    "scripts": {
+        "lint": "find plugin sandbox tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "cs": "phpcs --standard=phpcs.xml.dist",
+        "analyse": "phpstan analyse --configuration=phpstan.neon.dist --no-progress",
+        "test:unit": "phpunit --configuration=phpunit.xml.dist --testsuite=unit",
+        "test:integration": "bash scripts/test-integration.sh",
+        "test:performance": "bash scripts/performance-check.sh",
+        "clean-room": "bash scripts/clean-room-check.sh",
+        "check": [
+            "@lint",
+            "@cs",
+            "@analyse",
+            "@test:unit"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "phpstan/extension-installer": false
+        },
+        "platform": {
+            "php": "8.1.0"
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

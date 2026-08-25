@@ -4,7 +4,7 @@
 
 Build a reusable WordPress plugin that gives site teams a strong admin-table workflow without a paid license. The plugin must work across client sites while keeping each site's field rules and presets in a separate configuration layer.
 
-This is a feature-equivalent product goal. It is not a source-code clone. Contributors must not copy proprietary source code, assets, names, documentation, or visual trade dress from Admin Columns Pro or any other commercial product.
+This is an original product goal. It is not a source-code clone. Contributors must not copy proprietary source code, assets, names, documentation, or visual trade dress from any commercial product.
 
 ## Architecture
 

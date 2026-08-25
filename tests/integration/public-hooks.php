@@ -1,0 +1,82 @@
+<?php
+/**
+ * Integration assertions executed inside the real WordPress sandbox.
+ *
+ * @package NotewareAdminTables
+ * @license GPL-2.0-or-later
+ */
+
+$failures = array();
+
+$assert = static function (bool $condition, string $message) use (&$failures): void {
+    if (! $condition) {
+        $failures[] = $message;
+    }
+};
+
+$assert(is_plugin_active('noteware-admin-tables/noteware-admin-tables.php'), 'The plugin must be active.');
+$assert(did_action('noteware_admin_tables_loaded') > 0, 'The public loaded action must fire.');
+$assert(post_type_exists('nat_demo_record'), 'The generic fixture post type must be registered.');
+$assert(has_action('wp_ajax_nat_inline_edit'), 'The inline-edit AJAX action must be registered.');
+$assert(has_action('wp_ajax_nat_undo_edit'), 'The undo AJAX action must be registered.');
+
+$config = apply_filters('noteware_admin_tables_config', array());
+$assert(isset($config['nat_demo_record']['columns']), 'The public configuration filter must return demo columns.');
+
+$required_keys = array('key', 'label', 'source', 'type', 'field', 'sortable', 'filterable', 'editable', 'choices');
+$columns       = $config['nat_demo_record']['columns'] ?? array();
+
+foreach ($columns as $column_index => $column) {
+    foreach ($required_keys as $required_key) {
+        $assert(
+            array_key_exists($required_key, $column),
+            sprintf('Column %d must contain the %s key.', $column_index, $required_key)
+        );
+    }
+}
+
+$fixture_posts = get_posts(
+    array(
+        'post_type'      => 'nat_demo_record',
+        'post_status'    => 'publish',
+        'posts_per_page' => 60,
+        'fields'         => 'ids',
+        'meta_key'       => '_nat_fixture_index',
+        'orderby'        => 'meta_value_num',
+        'order'          => 'ASC',
+    )
+);
+
+$assert(count($fixture_posts) >= 60, 'The default sandbox fixture must contain at least 60 records.');
+
+$posts_by_index = array();
+foreach ($fixture_posts as $post_id) {
+    $posts_by_index[(int) get_post_meta((int) $post_id, '_nat_fixture_index', true)] = (int) $post_id;
+}
+
+$assert(isset($posts_by_index[9]), 'The fixture must contain the numeric-zero case.');
+$assert(isset($posts_by_index[10]), 'The fixture must contain the empty-string case.');
+$assert(isset($posts_by_index[11]), 'The fixture must contain the empty ACF text case.');
+
+if (isset($posts_by_index[9])) {
+    $assert(0 === (int) get_field('nat_demo_number', $posts_by_index[9]), 'Numeric zero must survive the field API.');
+}
+
+if (isset($posts_by_index[10])) {
+    $assert('' === get_post_meta($posts_by_index[10], 'nat_demo_note', true), 'Stored empty text must remain empty.');
+    $assert(metadata_exists('post', $posts_by_index[10], 'nat_demo_note'), 'Stored empty and absent values must differ.');
+    $assert(! metadata_exists('post', $posts_by_index[10], '_nat_demo_absent'), 'The absent fixture value must remain absent.');
+}
+
+if (isset($posts_by_index[11])) {
+    $assert('' === (string) get_field('nat_demo_text', $posts_by_index[11]), 'Stored empty ACF text must remain empty.');
+}
+
+if ($failures) {
+    foreach ($failures as $failure) {
+        WP_CLI::warning($failure);
+    }
+    WP_CLI::error(sprintf('%d integration assertion(s) failed.', count($failures)));
+}
+
+WP_CLI::success('Public hook, fixture, and adapter integration assertions passed.');
