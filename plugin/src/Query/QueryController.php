@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Noteware\AdminTables\Query;
 
 use InvalidArgumentException;
+use Noteware\AdminTables\Adapter\AdapterRegistry;
 use Noteware\AdminTables\Config\Configuration;
 use Noteware\AdminTables\Editing\ValueValidator;
 use Noteware\AdminTables\Model\ColumnDefinition;
@@ -22,8 +23,10 @@ final class QueryController
     /** @var list<string> */
     private array $warnings = array();
 
-    public function __construct(private readonly Configuration $configuration)
-    {
+    public function __construct(
+        private readonly Configuration $configuration,
+        private readonly AdapterRegistry $adapters
+    ) {
     }
 
     public function register(): void
@@ -51,7 +54,7 @@ final class QueryController
         $orderby = $query->get('orderby');
         if (is_string($orderby) && str_starts_with($orderby, 'nat_')) {
             $column = $this->configuration->column($postType, substr($orderby, 4));
-            if ($column && $column->sortable) {
+            if ($column && $column->sortable && $this->adapters->get($column->source)->supports($column)) {
                 $this->applySort($query, $column);
             }
         }
@@ -72,6 +75,10 @@ final class QueryController
                 continue;
             }
             if ('' === $_GET[$parameter]) {
+                continue;
+            }
+            if (! $this->adapters->get($column->source)->supports($column)) {
+                $this->rejectFilter($query, $column, __('This field configuration does not support scalar filtering.', 'noteware-admin-tables'));
                 continue;
             }
             try {

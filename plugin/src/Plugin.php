@@ -37,7 +37,7 @@ final class Plugin
 
         add_action('admin_init', array($audit, 'maybeInstall'));
         (new PostScreenController($configuration, $adapters))->register();
-        (new QueryController($configuration))->register();
+        (new QueryController($configuration, $adapters))->register();
         (new EditController($configuration, $adapters, $audit))->register();
 
         do_action('noteware_admin_tables_loaded', $configuration, $adapters);

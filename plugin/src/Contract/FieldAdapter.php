@@ -16,5 +16,7 @@ interface FieldAdapter
 {
     public function source(): string;
 
+    public function supports(ColumnDefinition $column): bool;
+
     public function read(int $postId, ColumnDefinition $column): StoredValue;
 }

@@ -62,7 +62,7 @@ final class PostScreenController
     public function sortableColumns(array $columns): array
     {
         foreach ($this->configuration->columns($this->currentPostType()) as $column) {
-            if ($column->sortable) {
+            if ($column->sortable && $this->adapters->get($column->source)->supports($column)) {
                 $columns['nat_' . $column->key] = 'nat_' . $column->key;
             }
         }
@@ -150,7 +150,7 @@ final class PostScreenController
     public function renderFilters(string $postType): void
     {
         foreach ($this->configuration->columns($postType) as $column) {
-            if (! $column->filterable) {
+            if (! $column->filterable || ! $this->adapters->get($column->source)->supports($column)) {
                 continue;
             }
             $name     = 'nat_filter_' . $column->key;

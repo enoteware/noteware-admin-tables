@@ -25,7 +25,7 @@ final class AcfAdapter implements FieldAdapter
 
     public function read(int $postId, ColumnDefinition $column): StoredValue
     {
-        if (! $this->supports($postId, $column)) {
+        if (! $this->supports($column)) {
             return new StoredValue(false, null);
         }
         $exists = metadata_exists('post', $postId, $column->field);
@@ -36,19 +36,19 @@ final class AcfAdapter implements FieldAdapter
         return new StoredValue(true, $value);
     }
 
-    private function supports(int $postId, ColumnDefinition $column): bool
+    public function supports(ColumnDefinition $column): bool
     {
         if (! function_exists('get_field') || ! function_exists('get_field_object')) {
             return false;
         }
 
         $selector = $column->fieldKey ?? $column->field;
-        $cacheKey = $selector . ':' . $column->type;
+        $cacheKey = $selector . ':' . $column->field . ':' . $column->type;
         if (array_key_exists($cacheKey, $this->supportCache)) {
             return $this->supportCache[$cacheKey];
         }
 
-        $field = get_field_object($selector, $postId, false, false);
+        $field = get_field_object($selector, false, false, false);
         $types = array(
             'text'    => 'text',
             'number'  => 'number',
@@ -58,7 +58,8 @@ final class AcfAdapter implements FieldAdapter
             'image'   => 'image',
         );
         $supported = is_array($field)
-            && isset($types[$column->type], $field['type'])
+            && isset($types[$column->type], $field['type'], $field['name'])
+            && $column->field === $field['name']
             && $types[$column->type] === $field['type'];
         if ($supported && 'select' === $column->type) {
             $supported = empty($field['multiple'])

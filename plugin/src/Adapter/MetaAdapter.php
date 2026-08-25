@@ -23,6 +23,12 @@ final class MetaAdapter implements EditableFieldAdapter
         return 'meta';
     }
 
+    public function supports(ColumnDefinition $column): bool
+    {
+        unset($column);
+        return true;
+    }
+
     public function read(int $postId, ColumnDefinition $column): StoredValue
     {
         $exists = metadata_exists('post', $postId, $column->field);

@@ -124,6 +124,25 @@ if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
         $stored = (new Noteware\AdminTables\Adapter\AcfAdapter())->read($posts_by_index[1], $column);
         $assert(! $stored->exists, sprintf('%s must fail closed instead of returning an array value.', $unsupported_select['key']));
     }
+
+    update_post_meta($posts_by_index[1], 'nat_test_wrong_name', 'alpha');
+    $mismatched_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+        array(
+            'key'        => 'mismatched_field',
+            'label'      => 'Mismatched field',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_test_wrong_name',
+            'field_key'  => 'field_nat_demo_choice',
+            'sortable'   => false,
+            'filterable' => false,
+            'editable'   => false,
+            'choices'    => array('alpha' => 'Alpha'),
+        )
+    );
+    $mismatched_stored = (new Noteware\AdminTables\Adapter\AcfAdapter())->read($posts_by_index[1], $mismatched_column);
+    $assert(! $mismatched_stored->exists, 'An ACF field key with a different field name must fail closed.');
+    delete_post_meta($posts_by_index[1], 'nat_test_wrong_name');
 }
 
 if ($failures) {

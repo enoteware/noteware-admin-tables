@@ -20,6 +20,12 @@ final class NativeAdapter implements FieldAdapter
         return 'native';
     }
 
+    public function supports(ColumnDefinition $column): bool
+    {
+        unset($column);
+        return true;
+    }
+
     public function read(int $postId, ColumnDefinition $column): StoredValue
     {
         $post = get_post($postId);

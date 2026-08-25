@@ -7,7 +7,12 @@
  */
 
 use Noteware\AdminTables\Config\Configuration;
+use Noteware\AdminTables\Adapter\AcfAdapter;
+use Noteware\AdminTables\Adapter\AdapterRegistry;
+use Noteware\AdminTables\Adapter\MetaAdapter;
+use Noteware\AdminTables\Adapter\NativeAdapter;
 use Noteware\AdminTables\Query\QueryController;
+use Noteware\AdminTables\Screen\PostScreenController;
 
 $failures = array();
 $assert   = static function (bool $condition, string $message) use (&$failures): void {
@@ -51,14 +56,79 @@ add_filter(
                 'publish' => 'Published',
             ),
         );
+        $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_multiple_select',
+            'label'      => 'Test multiple select',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_test_multiple_select',
+            'field_key'  => 'field_nat_test_query_multiple_select',
+            'sortable'   => true,
+            'filterable' => true,
+            'editable'   => false,
+            'choices'    => array('alpha' => 'Alpha'),
+        );
+        $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_array_select',
+            'label'      => 'Test array select',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_test_array_select',
+            'field_key'  => 'field_nat_test_query_array_select',
+            'sortable'   => true,
+            'filterable' => true,
+            'editable'   => false,
+            'choices'    => array('alpha' => 'Alpha'),
+        );
+        $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_mismatched_field',
+            'label'      => 'Test mismatched field',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_test_wrong_name',
+            'field_key'  => 'field_nat_demo_choice',
+            'sortable'   => true,
+            'filterable' => true,
+            'editable'   => false,
+            'choices'    => array('alpha' => 'Alpha'),
+        );
         return $config;
     },
     20
 );
 
+acf_add_local_field_group(
+    array(
+        'key'      => 'group_nat_test_query_selects',
+        'title'    => 'Query select test fields',
+        'fields'   => array(
+            array(
+                'key'           => 'field_nat_test_query_multiple_select',
+                'label'         => 'Multiple select',
+                'name'          => 'nat_test_multiple_select',
+                'type'          => 'select',
+                'choices'       => array('alpha' => 'Alpha'),
+                'multiple'      => 1,
+                'return_format' => 'value',
+            ),
+            array(
+                'key'           => 'field_nat_test_query_array_select',
+                'label'         => 'Array select',
+                'name'          => 'nat_test_array_select',
+                'type'          => 'select',
+                'choices'       => array('alpha' => 'Alpha'),
+                'multiple'      => 0,
+                'return_format' => 'array',
+            ),
+        ),
+        'location' => array(),
+    )
+);
+
 set_current_screen('edit-nat_demo_record');
 $configuration = new Configuration();
-$controller    = new QueryController($configuration);
+$adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter()));
+$controller    = new QueryController($configuration, $adapters);
 $query         = new WP_Query();
 $query->set('post_type', 'nat_demo_record');
 $query->set('orderby', 'nat_nat_demo_number');
@@ -99,6 +169,42 @@ $assert(str_contains($notices, 'notice-warning'), 'A metadata operation must emi
 $assert(str_contains($notices, 'No more than five metadata filters may run together.'), 'The filter cap must emit a clear error.');
 $assert(str_contains($notices, '&lt;script&gt;Cost probe&lt;/script&gt;'), 'Cost-warning labels must be escaped at the HTML boundary.');
 $assert(! str_contains($notices, '<script>'), 'Cost-warning labels must never render executable markup.');
+
+// Unsupported ACF field shapes must not expose controls or accept direct query parameters.
+foreach (array('nat_test_multiple_select', 'nat_test_array_select', 'nat_test_mismatched_field') as $unsupported_key) {
+    $_GET = array('nat_filter_' . $unsupported_key => 'alpha');
+    $unsupported_filter_query = new WP_Query();
+    $unsupported_filter_query->set('post_type', 'nat_demo_record');
+    $GLOBALS['wp_the_query'] = $unsupported_filter_query;
+    $GLOBALS['wp_query']     = $unsupported_filter_query;
+    $controller->apply($unsupported_filter_query);
+    $assert(array(0) === $unsupported_filter_query->get('post__in'), sprintf('%s filtering must fail closed.', $unsupported_key));
+
+    $_GET = array();
+    $unsupported_sort_query = new WP_Query();
+    $unsupported_sort_query->set('post_type', 'nat_demo_record');
+    $unsupported_sort_query->set('orderby', 'nat_' . $unsupported_key);
+    $GLOBALS['wp_the_query'] = $unsupported_sort_query;
+    $GLOBALS['wp_query']     = $unsupported_sort_query;
+    $controller->apply($unsupported_sort_query);
+    $assert('nat_' . $unsupported_key === $unsupported_sort_query->get('orderby'), sprintf('%s sorting must not build a metadata plan.', $unsupported_key));
+    $assert(empty($unsupported_sort_query->get('meta_query')), sprintf('%s sorting must not add metadata clauses.', $unsupported_key));
+}
+
+$_GET             = array('post_type' => 'nat_demo_record');
+$screen_controller = new PostScreenController($configuration, $adapters);
+$sortable_columns  = $screen_controller->sortableColumns(array());
+$assert(isset($sortable_columns['nat_nat_demo_choice']), 'A supported scalar ACF select must remain sortable.');
+$assert(! isset($sortable_columns['nat_nat_test_multiple_select']), 'A multiple ACF select must not expose a sort control.');
+$assert(! isset($sortable_columns['nat_nat_test_array_select']), 'An array-return ACF select must not expose a sort control.');
+$assert(! isset($sortable_columns['nat_nat_test_mismatched_field']), 'A mismatched ACF field key must not expose a sort control.');
+ob_start();
+$screen_controller->renderFilters('nat_demo_record');
+$filter_markup = (string) ob_get_clean();
+$assert(str_contains($filter_markup, 'nat_filter_nat_demo_choice'), 'A supported scalar ACF select must retain its filter control.');
+$assert(! str_contains($filter_markup, 'nat_filter_nat_test_multiple_select'), 'A multiple ACF select must not expose a filter control.');
+$assert(! str_contains($filter_markup, 'nat_filter_nat_test_array_select'), 'An array-return ACF select must not expose a filter control.');
+$assert(! str_contains($filter_markup, 'nat_filter_nat_test_mismatched_field'), 'A mismatched ACF field key must not expose a filter control.');
 
 // Invalid native filters must fail closed instead of silently returning an unfiltered list.
 foreach (
