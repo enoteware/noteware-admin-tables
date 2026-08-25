@@ -11,6 +11,8 @@ WordPress calls a custom column renderer once for each row and column. A data fe
 
 The current page is the loading boundary. The loader collects its post IDs once, then prepares all values needed by registered columns before cell rendering begins.
 
+Automatic preload runs only for the main query on the exact configured post-type edit screen. Other admin screens and secondary queries do not trigger plugin cache work.
+
 The loader follows these rules:
 
 - Reuse `WP_Query` post and metadata caches.

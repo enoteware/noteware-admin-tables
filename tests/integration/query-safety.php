@@ -31,6 +31,17 @@ add_filter(
         }
         unset($column);
         $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_decimal',
+            'label'      => 'Test decimal',
+            'source'     => 'meta',
+            'type'       => 'number',
+            'field'      => 'nat_test_decimal',
+            'sortable'   => true,
+            'filterable' => true,
+            'editable'   => false,
+            'choices'    => array(),
+        );
+        $config['nat_demo_record']['columns'][] = array(
             'key'        => 'nat_test_author',
             'label'      => 'Test author',
             'source'     => 'native',
@@ -153,12 +164,16 @@ $assert('' === $query->get('meta_key'), 'A sparse-safe metadata sort must not us
 $assert('nat_sort_nat_demo_number' === $query->get('orderby'), 'A metadata sort must use its allowlisted named clause.');
 
 $meta_query = $query->get('meta_query');
-$assert(is_array($meta_query) && 6 === count($meta_query), 'One sparse sort group and only five metadata filters may reach WP_Meta_Query.');
-$sort_group = is_array($meta_query) ? ($meta_query[0] ?? array()) : array();
+$assert(is_array($meta_query) && 'AND' === ($meta_query['relation'] ?? null), 'Sort and filter metadata plans must meet at a top-level AND boundary.');
+$sort_wrapper = is_array($meta_query) ? ($meta_query[0] ?? array()) : array();
+$sort_group   = is_array($sort_wrapper) ? ($sort_wrapper[0] ?? array()) : array();
+$filter_group = is_array($meta_query) ? ($meta_query[1] ?? array()) : array();
 $assert('OR' === ($sort_group['relation'] ?? null), 'Sparse metadata sorting must combine present and absent rows.');
 $assert('EXISTS' === ($sort_group['nat_sort_nat_demo_number']['compare'] ?? null), 'Sparse sorting must include rows with values.');
 $assert('NOT EXISTS' === ($sort_group['nat_sort_nat_demo_number_not_present']['compare'] ?? null), 'Sparse sorting must include rows without values.');
-foreach (array_slice((array) $meta_query, 1) as $clause) {
+$assert('AND' === ($filter_group['relation'] ?? null), 'Plugin metadata filters must use their own AND group.');
+$assert(6 === count($filter_group), 'Only five metadata filters plus their relation may reach WP_Meta_Query.');
+foreach (array_filter((array) $filter_group, 'is_array') as $clause) {
     $assert('=' === ($clause['compare'] ?? null), 'Every first-milestone metadata filter must use exact comparison.');
 }
 
@@ -330,6 +345,88 @@ if (2 === count($fixture_ids)) {
             delete_post_meta($absent_id, 'nat_demo_note');
         }
     }
+
+    // Plugin filters must narrow, never broaden, a pre-existing OR metadata query.
+    set_current_screen('edit-nat_demo_record');
+    $_GET = array('nat_filter_nat_demo_note' => 'Note 38');
+    $existing_or_filter_query = new WP_Query();
+    $GLOBALS['wp_the_query']  = $existing_or_filter_query;
+    $GLOBALS['wp_query']      = $existing_or_filter_query;
+    $existing_or_filter_query->query(
+        array(
+            'post_type'      => 'nat_demo_record',
+            'post_status'    => 'publish',
+            'post__in'       => array_map('intval', $fixture_ids),
+            'posts_per_page' => 2,
+            'fields'         => 'ids',
+            'meta_query'     => array(
+                'relation' => 'OR',
+                array('key' => '_nat_fixture_index', 'value' => 37, 'compare' => '=', 'type' => 'NUMERIC'),
+                array('key' => '_nat_fixture_index', 'value' => 999999, 'compare' => '=', 'type' => 'NUMERIC'),
+            ),
+            'no_found_rows'  => true,
+        )
+    );
+    $assert(array() === array_map('intval', $existing_or_filter_query->posts), 'A plugin filter must be ANDed with a pre-existing OR metadata query.');
+
+    // Decimal filtering must distinguish a fractional value from its integer prefix.
+    $decimal_values = array(
+        $fixture_by_index[37] => '12.5',
+        $fixture_by_index[38] => '12',
+    );
+    foreach ($decimal_values as $fixture_id => $decimal_value) {
+        update_post_meta($fixture_id, 'nat_test_decimal', $decimal_value);
+    }
+    try {
+        $_GET = array('nat_filter_nat_test_decimal' => '12.5');
+        $decimal_query = new WP_Query();
+        $GLOBALS['wp_the_query'] = $decimal_query;
+        $GLOBALS['wp_query']     = $decimal_query;
+        $decimal_query->query(
+            array(
+                'post_type'      => 'nat_demo_record',
+                'post_status'    => 'publish',
+                'post__in'       => array_map('intval', $fixture_ids),
+                'posts_per_page' => 2,
+                'fields'         => 'ids',
+                'no_found_rows'  => true,
+            )
+        );
+        $assert(array($fixture_by_index[37]) === array_map('intval', $decimal_query->posts), 'Exact decimal filtering must not truncate 12.5 to 12.');
+        $decimal_meta_query = $decimal_query->get('meta_query');
+        $decimal_clause     = is_array($decimal_meta_query) ? ($decimal_meta_query[0] ?? array()) : array();
+        $assert('DECIMAL(65,30)' === ($decimal_clause['type'] ?? null), 'Decimal metadata filters must use a precision-preserving cast.');
+    } finally {
+        foreach (array_keys($decimal_values) as $fixture_id) {
+            delete_post_meta($fixture_id, 'nat_test_decimal');
+        }
+    }
+
+    // Automatic page preload must run only on the exact configured edit screen.
+    $preload_post = get_post($fixture_by_index[37]);
+    $assert($preload_post instanceof WP_Post, 'Preload screen assertions require one fixture post object.');
+    if ($preload_post instanceof WP_Post) {
+        foreach (array('dashboard', 'edit-post') as $screen_id) {
+            set_current_screen($screen_id);
+            wp_cache_delete($preload_post->ID, 'post_meta');
+            $preload_query = new WP_Query();
+            $preload_query->set('post_type', 'nat_demo_record');
+            $GLOBALS['wp_the_query'] = $preload_query;
+            $GLOBALS['wp_query']     = $preload_query;
+            $screen_controller->preloadPosts(array($preload_post), $preload_query);
+            $assert(false === wp_cache_get($preload_post->ID, 'post_meta'), sprintf('%s must not preload configured metadata.', $screen_id));
+        }
+
+        set_current_screen('edit-nat_demo_record');
+        wp_cache_delete($preload_post->ID, 'post_meta');
+        $preload_query = new WP_Query();
+        $preload_query->set('post_type', 'nat_demo_record');
+        $GLOBALS['wp_the_query'] = $preload_query;
+        $GLOBALS['wp_query']     = $preload_query;
+        $screen_controller->preloadPosts(array($preload_post), $preload_query);
+        $assert(false !== wp_cache_get($preload_post->ID, 'post_meta'), 'The matching edit screen must preload configured metadata.');
+        wp_cache_delete($preload_post->ID, 'post_meta');
+    }
 }
 
 // Configured query parameters must be ignored outside the matching edit list screen.
@@ -360,4 +457,4 @@ if ($failures) {
     WP_CLI::error(sprintf('%d query safety assertion(s) failed.', count($failures)));
 }
 
-WP_CLI::success('Exact filters, sparse sorting, screen scope, native fail-closed rules, warnings, escaping, and the five-filter cap passed.');
+WP_CLI::success('Exact decimal filters, preserved query relations, sparse sorting, screen-scoped preloading, native fail-closed rules, warnings, escaping, and the five-filter cap passed.');

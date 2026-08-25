@@ -9,12 +9,12 @@ The plugin now provides external post-screen configuration, native and metadata 
 ## Local proof
 
 - Composer validation, PHP syntax, PHPCS, PHPStan, and PHPUnit pass.
-- PHPUnit has 29 tests and 57 assertions.
-- WordPress integration checks exercise edit and undo success, nonces, object and field capabilities, allowlists, invalid input, stale snapshots, repeated undo, audit creation, transaction rollback, literal backslash preservation, sparse metadata sorting, exact query comparisons, screen scoping, native fail-closed filters, ACF field-key mismatches, unsupported ACF select shapes and query controls, warning escaping, and the metadata-filter cost cap.
+- PHPUnit has 31 tests and 59 assertions.
+- WordPress integration checks exercise edit and undo success, nonces, object and field capabilities, allowlists, invalid input, stale snapshots, repeated undo, audit creation, transaction rollback, literal backslash preservation, duplicate-row rejection, sparse metadata sorting, exact decimal comparison, preservation of pre-existing query relations, exact-screen cache preload, native fail-closed filters, ACF field-key mismatches, unsupported ACF select shapes and query controls, warning escaping, and the metadata-filter cost cap.
 - JavaScript lint and one Jest interaction test pass.
 - Playwright has five passing tests for display, exact sort and filter behavior, keyboard focus, edit, undo, invalid nonce, invalid-filter fail-closed behavior, and scoped WCAG checks in open and error states.
 - The 10,000-record profile renders 160 cells for 20 rows and 800 cells for 100 rows. Both runs use eight total queries, including four preload and render queries. Query growth is zero.
-- The latest local HTTP samples have a 0.106 second median and a 0.108 second maximum against a 5 second budget.
+- The latest local HTTP samples have a 0.104 second median and a 0.108 second maximum against a 5 second budget.
 - Composer and full npm tooling dependency audits pass. The license report covers 904 dependencies with zero blocked and zero missing declarations.
 - The full-worktree clean-room, secret-shape, and user-facing punctuation scan passes.
 - Browser screenshots are generated under `tests/artifacts/` and ignored from git. CI uploads browser evidence as an artifact.

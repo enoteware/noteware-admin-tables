@@ -82,6 +82,9 @@ final class MetaAdapter implements EditableFieldAdapter
         if (false === $metaLock) {
             throw new RuntimeException('The field could not be locked for editing.');
         }
+        if ($metaLock > 1) {
+            throw new RuntimeException('Fields with multiple metadata rows cannot be edited safely.');
+        }
     }
 
     public function write(int $postId, ColumnDefinition $column, mixed $value, StoredValue $expected): void

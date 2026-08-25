@@ -463,6 +463,30 @@ $expect_failure(
 $assert('External value after edit' === get_post_meta($post_id, $note_column->field, true), 'A stale undo must preserve the newer value.');
 $assert($stale_undo_count === $audit_count(), 'A stale undo must not append an audit row.');
 
+// Duplicate metadata rows are ambiguous, so edit and remove must fail closed.
+$duplicate_before = $note_state();
+delete_post_meta($post_id, $note_column->field);
+$duplicate_value = 'Duplicate C:\\Rows\\record.txt';
+add_post_meta($post_id, $note_column->field, wp_slash($duplicate_value), false);
+add_post_meta($post_id, $note_column->field, wp_slash($duplicate_value), false);
+$duplicate_state = $note_state();
+foreach (array(false, true) as $remove_duplicate) {
+    $duplicate_count = $audit_count();
+    $expect_failure(
+        static fn (): array => $controller->processEdit(
+            $edit_request('nat_demo_note', 'Duplicate rows must not write', $duplicate_state->hash(), $remove_duplicate)
+        ),
+        $remove_duplicate ? 'Duplicate metadata rows must reject removal.' : 'Duplicate metadata rows must reject editing.'
+    );
+    $duplicate_rows = get_post_meta($post_id, $note_column->field, false);
+    $assert(array($duplicate_value, $duplicate_value) === $duplicate_rows, 'A rejected duplicate-row operation must preserve every stored row exactly.');
+    $assert($duplicate_count === $audit_count(), 'A rejected duplicate-row operation must not append an audit row.');
+}
+delete_post_meta($post_id, $note_column->field);
+if ($duplicate_before->exists) {
+    update_post_meta($post_id, $note_column->field, wp_slash($duplicate_before->value));
+}
+
 // Force a safe insert error. The transaction must roll back the adapter write.
 $rollback_state = $note_state();
 $rollback_count = $audit_count();

@@ -104,6 +104,10 @@ final class PostScreenController
         if (! in_array($postType, $this->configuration->postTypes(), true)) {
             return $posts;
         }
+        $screen = get_current_screen();
+        if (! $screen || 'edit' !== $screen->base || $postType !== $screen->post_type) {
+            return $posts;
+        }
         $this->preload(array_map(static fn (\WP_Post $post): int => $post->ID, $posts));
         return $posts;
     }

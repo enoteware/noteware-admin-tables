@@ -47,6 +47,8 @@ final class ValueValidatorTest extends TestCase
         yield 'array payload' => array('text', array('x'));
         yield 'sql-shaped number' => array('number', '1 OR 1=1');
         yield 'nan' => array('number', 'NaN');
+        yield 'too many integer digits' => array('number', str_repeat('9', 36));
+        yield 'too many decimal digits' => array('number', '0.' . str_repeat('9', 31));
         yield 'unknown boolean' => array('boolean', 'yes');
         yield 'unknown choice' => array('select', 'other', array('safe' => 'Safe'));
         yield 'bad date' => array('date', '2026-02-30');

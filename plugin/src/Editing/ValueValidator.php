@@ -35,6 +35,12 @@ final class ValueValidator
         if (! preg_match('/^-?(?:\d+|\d*\.\d+)$/', $raw) || ! is_finite((float) $raw)) {
             throw new InvalidArgumentException('Enter a valid number.');
         }
+        $parts          = explode('.', ltrim($raw, '-'), 2);
+        $integerDigits  = max(1, strlen(ltrim($parts[0], '0')));
+        $fractionDigits = isset($parts[1]) ? strlen($parts[1]) : 0;
+        if ($integerDigits > 35 || $fractionDigits > 30) {
+            throw new InvalidArgumentException('Enter a number with no more than 35 integer and 30 decimal digits.');
+        }
         return $raw;
     }
 

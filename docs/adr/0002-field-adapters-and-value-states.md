@@ -37,6 +37,8 @@ The snapshot also records the value type. This keeps integer zero, string zero, 
 
 An adapter must document the states its upstream API can store. Plain WordPress metadata cannot preserve every PHP type after serialization. A boolean metadata adapter therefore uses a documented canonical representation. It does not pretend that an empty string and false are distinct if the storage API has already collapsed them.
 
+The editable metadata adapter requires one row for its configured key. It rejects duplicate rows before mutation because a single visible snapshot cannot safely describe or restore multiple stored values.
+
 The first milestone keeps ACF adapters display-only. ACF access uses documented functions. The adapter verifies that the configured field key resolves to the configured field name and type. The same support decision gates display reads, sorting controls, filter controls, and query planning.
 
 ## Consequences

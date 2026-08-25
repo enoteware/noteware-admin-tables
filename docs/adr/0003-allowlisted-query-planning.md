@@ -27,6 +27,8 @@ Metadata sort and filter plans are marked as expensive. The list remains paginat
 
 Metadata sorting uses a named value clause plus an alternate `NOT EXISTS` clause so rows with absent values remain visible. The presence group is combined with any existing metadata query through a top-level `AND`, so sorting cannot broaden another component's filter.
 
+Plugin metadata filters use their own `AND` group. That group is combined with any pre-existing metadata query through a new top-level `AND`, preserving an existing `OR` relation instead of appending to and broadening it. Numeric metadata uses a bounded fixed-precision decimal cast. Boolean and compact ACF dates use unsigned integer casts.
+
 ## Consequences
 
 - Query safety can be tested without issuing SQL.

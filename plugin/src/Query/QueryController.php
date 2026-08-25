@@ -59,9 +59,10 @@ final class QueryController
             }
         }
 
-        $metaQuery = $query->get('meta_query');
-        $metaQuery = is_array($metaQuery) ? $metaQuery : array();
-        $metadataFilters = 0;
+        $existingMetaQuery = $query->get('meta_query');
+        $existingMetaQuery = is_array($existingMetaQuery) ? $existingMetaQuery : array();
+        $pluginMetaFilters = array();
+        $metadataFilters   = 0;
         foreach ($this->configuration->columns($postType) as $column) {
             if (! $column->filterable) {
                 continue;
@@ -101,7 +102,7 @@ final class QueryController
             if ('acf' === $column->source && 'date' === $column->type) {
                 $value = str_replace('-', '', $value);
             }
-            $metaQuery[] = array(
+            $pluginMetaFilters[] = array(
                 'key'     => $column->field,
                 'value'   => $value,
                 'compare' => '=',
@@ -109,7 +110,10 @@ final class QueryController
             );
         }
 
-        if ($metaQuery) {
+        if ($pluginMetaFilters) {
+            $metaQuery = $existingMetaQuery
+                ? array('relation' => 'AND', $existingMetaQuery, array_merge(array('relation' => 'AND'), $pluginMetaFilters))
+                : $pluginMetaFilters;
             $query->set('meta_query', $metaQuery);
         }
     }
@@ -162,9 +166,10 @@ final class QueryController
     private function metaType(ColumnDefinition $column): string
     {
         return match ($column->type) {
-            'number', 'boolean' => 'NUMERIC',
-            'date'              => 'acf' === $column->source ? 'NUMERIC' : 'DATE',
-            default             => 'CHAR',
+            'number'  => 'DECIMAL(65,30)',
+            'boolean' => 'UNSIGNED',
+            'date'    => 'acf' === $column->source ? 'UNSIGNED' : 'DATE',
+            default   => 'CHAR',
         };
     }
 

@@ -18,6 +18,8 @@ A nonce helps prevent cross-site request forgery. It is not authorization. Capab
 
 Test missing and invalid nonces, object access, field access, unknown columns, arrays where scalars are required, stale snapshots, cross-object audit IDs, and repeated undo.
 
+Editable metadata must have one row for its configured key. Duplicate rows are rejected before update or removal because the visible scalar snapshot cannot represent them safely.
+
 ## Output boundary
 
 Keep stored data unescaped. Escape when it enters HTML, an attribute, or a URL. Plugin JavaScript treats server values as text unless the markup is created by the plugin and separately sanitized.
@@ -29,6 +31,8 @@ Test stored and reflected payloads in field values, labels, choice labels, image
 Only an allowlisted column ID may select a query rule. The browser cannot choose a metadata key, comparison operator, cast, clause name, SQL fragment, or callback.
 
 Use `WP_Query` and `WP_Meta_Query` arguments. If a custom audit query is needed, use trusted table and column identifiers and prepare every value through `wpdb`.
+
+Plugin metadata filters are grouped with `AND`. The plugin then combines that group with a pre-existing metadata query through a top-level `AND`, so an existing `OR` query keeps its meaning. Decimal values use a bounded fixed-precision cast rather than an integer-like numeric cast.
 
 ## Audit and undo
 
@@ -45,6 +49,8 @@ The list page is the batch boundary. Once preload finishes:
 - ACF definitions and choices are reused;
 - attachment records are loaded as one bounded set; and
 - no operation reads the complete post table.
+
+Automatic preload requires the exact configured edit screen and the main query. It does not prime caches on dashboards, other post-type screens, or secondary queries.
 
 The fixture command creates at least 10,000 generic records and is safe to run more than once. The performance check reports row count, database query count, and elapsed time. It compares more than one page size so proportional query growth is visible.
 
