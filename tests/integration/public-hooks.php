@@ -131,6 +131,11 @@ if (isset($posts_by_index[11])) {
 }
 
 if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
+    $oversized_choices = array();
+    for ($choice_index = 0; $choice_index <= 200; ++$choice_index) {
+        $oversized_choices['choice_' . $choice_index] = 'Choice ' . $choice_index;
+    }
+
     $choice_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
         array(
             'key'        => 'resolved_choice_label',
@@ -228,6 +233,15 @@ if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
                     'multiple'      => 0,
                     'return_format' => 'value',
                 ),
+                array(
+                    'key'           => 'field_nat_test_oversized_select',
+                    'label'         => 'Oversized select',
+                    'name'          => 'nat_test_oversized_select',
+                    'type'          => 'select',
+                    'choices'       => $oversized_choices,
+                    'multiple'      => 0,
+                    'return_format' => 'value',
+                ),
             ),
             'location' => array(),
         )
@@ -254,6 +268,23 @@ if (isset($posts_by_index[1]) && function_exists('acf_add_local_field_group')) {
     $assert('&lt;img src=x onerror=alert(1)&gt;' === $hostile_markup, 'A live ACF choice label must be escaped at the HTML boundary.');
     delete_post_meta($posts_by_index[1], 'nat_test_hostile_select');
     delete_post_meta($posts_by_index[1], '_nat_test_hostile_select');
+
+    $oversized_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+        array(
+            'key'        => 'oversized_select',
+            'label'      => 'Oversized select',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_test_oversized_select',
+            'field_key'  => 'field_nat_test_oversized_select',
+            'sortable'   => false,
+            'filterable' => false,
+            'editable'   => false,
+            'choices'    => array(),
+        )
+    );
+    $oversized_stored = (new Noteware\AdminTables\Adapter\AcfAdapter())->read($posts_by_index[1], $oversized_column);
+    $assert(! $oversized_stored->exists, 'An ACF select with more than 200 live choices must fail closed.');
 
     foreach (
         array(

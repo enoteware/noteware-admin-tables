@@ -77,13 +77,14 @@ final class AcfAdapter implements FieldAdapter
         if ($supported && 'select' === $column->type) {
             $supported = empty($field['multiple'])
                 && (! isset($field['return_format']) || 'value' === $field['return_format']);
+            $fieldChoices = (array) ($field['choices'] ?? array());
+            if (count($fieldChoices) > 200) {
+                $supported = false;
+            }
             if ($supported) {
                 $choices = array();
-                foreach ((array) ($field['choices'] ?? array()) as $value => $label) {
+                foreach ($fieldChoices as $value => $label) {
                     $value = (string) $value;
-                    if (count($choices) >= 200) {
-                        break;
-                    }
                     if (strlen($value) <= 191 && is_scalar($label) && strlen((string) $label) <= 200) {
                         $choices[$value] = (string) $label;
                     }
