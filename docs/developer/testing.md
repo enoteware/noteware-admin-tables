@@ -30,7 +30,9 @@ These commands cover:
 - JavaScript lint and unit tests;
 - dependency license reporting;
 - the 10,000-record performance check; and
-- the clean-room and secret scan.
+- the tracked-env, secret-shape, example-domain, and punctuation scan.
+
+That scan uses `grep` rather than ripgrep, because ripgrep is not installed on the continuous integration runner. It fails when it cannot run, so a missing tool or a malformed pattern can never be mistaken for a clean result.
 
 Run any additional CI-only dependency and license jobs shown in the pull request. Do not skip a group because a different group passes.
 

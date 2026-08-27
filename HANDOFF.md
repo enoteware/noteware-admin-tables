@@ -54,6 +54,7 @@ was accepted and fixed, with a test for each.
 - The page-scoped undo lookup limited raw rows, so repeated edits of one cell could hide another cell's undo control. It now groups in the database.
 - Undo restored an audited ACF value without re-validating it against the field as it is now.
 - The repository scan named the client and competitor it prohibits, and a broken pattern made it pass silently. It is now generic and fails when it cannot run.
+- **The scan had never run in continuous integration.** Ripgrep is not installed on the runner, and the old `if rg ...` form treated the missing binary as a clean result. The scan now uses `grep`, and every rule is verified against a planted match, including a run with no tools on the path.
 
 ## Notable fixes in this branch
 

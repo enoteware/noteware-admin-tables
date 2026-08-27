@@ -44,7 +44,7 @@ All notable changes to this project are documented in this file.
 - A column whose only operator is a presence operator renders that control, so the filter can actually be used.
 - A taxonomy larger than the bounded choice list keeps its presence filters, which never needed a term list.
 - The page-scoped undo lookup selects the newest row per cell in the database, so repeated edits of one cell cannot hide another cell's undo control.
-- The repository scan fails when it cannot run, instead of passing silently on a tool error, and it no longer names the things it prohibits.
+- The repository scan fails when it cannot run, instead of passing silently on a tool error, and it no longer names the things it prohibits. It also uses `grep`, which is always present. Ripgrep is not installed on the continuous integration runner, so the previous version of this scan had never actually run there.
 - The dependency license report failed when an optional peer dependency listed in the lockfile was not installed. It now reports only what npm installed and prints how many entries it skipped.
 - A list screen with several editable columns could produce a filter request that the web server rejected as too long.
 - Plugin cells could overflow their table cell and cover a neighbouring column on a screen with many columns.

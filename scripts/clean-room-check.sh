@@ -4,23 +4,30 @@ set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$repo_dir"
 
+if ! command -v grep >/dev/null 2>&1; then
+  printf '%s\n' 'grep is required for this scan.' >&2
+  exit 1
+fi
+
 if git ls-files --error-unmatch .env >/dev/null 2>&1; then
   printf '%s\n' 'Tracked .env files are not allowed.' >&2
   exit 1
 fi
 
-# Run one ripgrep scan and treat a tool error as a failure. A scan that cannot
-# run is not a scan that passed.
+# Run one scan over tracked project content. A scan that cannot run is not a
+# scan that passed, so any tool error fails the check.
 scan() {
   scan_output=""
   set +e
-  scan_output=$(rg -n -I -i \
-    --glob '!.git/**' \
-    --glob '!node_modules/**' \
-    --glob '!vendor/**' \
-    --glob '!package-lock.json' \
-    --glob '!composer.lock' \
-    --glob '!clean-room-check.sh' \
+  scan_output=$(grep -R -n -I -i -E \
+    --exclude-dir=.git \
+    --exclude-dir=node_modules \
+    --exclude-dir=vendor \
+    --exclude-dir=test-results \
+    --exclude-dir=playwright-report \
+    --exclude=package-lock.json \
+    --exclude=composer.lock \
+    --exclude=clean-room-check.sh \
     "$1" .)
   scan_status=$?
   set -e
@@ -29,7 +36,6 @@ scan() {
     printf '%s\n' 'The scan could not run, so it cannot be treated as passing.' >&2
     exit 1
   fi
-  return 0
 }
 
 # This project is deliberately generic about names. Listing a client or a
@@ -45,14 +51,32 @@ fi
 
 # Fixtures and documentation may only use reserved example domains.
 scan '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
-real_addresses=$(printf '%s\n' "$scan_output" | grep -v -E '@(example\.(test|com|org|net)|users\.noreply\.github\.com|noreply\.anthropic\.com)' || true)
+real_addresses=$(printf '%s\n' "$scan_output" \
+  | grep -v -E '@(example\.(test|com|org|net)|users\.noreply\.github\.com|noreply\.anthropic\.com)' \
+  || true)
 if [ -n "$real_addresses" ]; then
   printf '%s\n' "$real_addresses"
   printf '%s\n' 'Only reserved example email domains are allowed in this repository.' >&2
   exit 1
 fi
 
-if rg -n --glob '!clean-room-check.sh' '[—–]' README.md ROADMAP.md HANDOFF.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs plugin sandbox tests .github scripts; then
+# User-facing project content must not use an em-dash or an en-dash.
+set +e
+dashes=$(grep -R -n -I \
+  --exclude-dir=.git \
+  --exclude-dir=node_modules \
+  --exclude-dir=vendor \
+  --exclude=clean-room-check.sh \
+  -e '—' -e '–' \
+  README.md ROADMAP.md HANDOFF.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs plugin sandbox tests .github scripts)
+dash_status=$?
+set -e
+if [ "$dash_status" -gt 1 ]; then
+  printf '%s\n' 'The punctuation scan could not run, so it cannot be treated as passing.' >&2
+  exit 1
+fi
+if [ -n "$dashes" ]; then
+  printf '%s\n' "$dashes"
   printf '%s\n' 'User-facing project content contains an em-dash or en-dash.' >&2
   exit 1
 fi
