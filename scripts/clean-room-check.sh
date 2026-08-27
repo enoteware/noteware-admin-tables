@@ -9,6 +9,12 @@ if git ls-files --error-unmatch .env >/dev/null 2>&1; then
   exit 1
 fi
 
+# The prohibited names are assembled from parts so this public repository
+# never spells a competing product or a client tag, even in its own scanner.
+competitor="admin"" columns ""pro"
+client_tag="cf""mtg"
+client_name="cornerstone"" mortgage"
+
 if rg -n -I -i \
   --glob '!.git/**' \
   --glob '!node_modules/**' \
@@ -16,8 +22,8 @@ if rg -n -I -i \
   --glob '!package-lock.json' \
   --glob '!composer.lock' \
   --glob '!clean-room-check.sh' \
-  'admin columns pro|sk_live_[A-Za-z0-9]+|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY' .; then
-  printf '%s\n' 'The clean-room scan found a prohibited product name or secret-shaped value.' >&2
+  "${competitor}|${client_tag}|${client_name}|blend_link|nxcli|sk_live_[A-Za-z0-9]+|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY" .; then
+  printf '%s\n' 'The clean-room scan found a prohibited product name, a client identifier, or a secret-shaped value.' >&2
   exit 1
 fi
 

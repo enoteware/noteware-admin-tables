@@ -2,10 +2,9 @@
 
 ## State
 
-Two branches are open for review.
-
-1. `feat/first-review-milestone` carries the first review milestone and remains open as pull request 1.
-2. `feat/acf-and-cfmtg-parity` builds on it and adds the parity work described below.
+Two branches are open for review. Pull request 1 carries the first review
+milestone. Pull request 2 builds on it with the parity work described below.
+GitHub is the source for both branch names and their current heads.
 
 The parity branch adds writable ACF text, link, and select fields, a taxonomy adapter, native title, slug, and featured-image editing, computed permalink display, filter operators for exact, empty, and has-a-value matching, bulk editing with per-record audit boundaries, site-owned column order, built-in column replacement, bounded column widths, and an undo control that survives a page reload. Site configuration and fixture data stay in the sandbox layer outside the distributable plugin.
 
