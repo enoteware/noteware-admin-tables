@@ -50,3 +50,11 @@ The audit table gained an `is_undo` marker, recorded at schema version 3. A row 
 The list screen now offers an undo control for an edit that survives a page reload. The offer is bounded: the current user's own edit, not already undone, not itself an undo, and less than 24 hours old. The whole page's undoable rows are read in one bounded query during preload, so the control never costs a query per row.
 
 The rendered control is a convenience only. The undo endpoint still rechecks the nonce, the current authorization, the audit row state, and that the stored value still matches the audited new value.
+
+## Amendment, 2026-08-27: transaction scope and a bounded lookup
+
+Two boundaries tightened after review.
+
+The transaction engine check now covers every table an edit writes, not just post metadata and the audit table. Each editable adapter names its own tables, so a taxonomy write also checks the term relationship and term taxonomy tables and a native write also checks the posts table. An edit on a non transactional table is refused rather than committed outside the transaction.
+
+The page-scoped undo lookup is bounded by the number of rendered records and the configured column cap, and it keeps the newest row per cell. A screen that has been edited many times cannot make an ordinary list request scan an unbounded audit history.

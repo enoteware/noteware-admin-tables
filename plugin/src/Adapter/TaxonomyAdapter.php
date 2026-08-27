@@ -26,6 +26,9 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
     /** @var array<string, array<string, string>|null> */
     private array $termCache = array();
 
+    /** @var array<string, int|false> */
+    private array $slugCache = array();
+
     public function source(): string
     {
         return 'taxonomy';
@@ -68,6 +71,12 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
         if (false === $taxonomy) {
             throw new InvalidArgumentException('The configured taxonomy is not available.');
         }
+        $postType = get_post_type($postId);
+        if (! is_string($postType) || ! is_object_in_taxonomy($postType, $column->field)) {
+            // A taxonomy registered for a different post type must never gain
+            // relationships here just because it has an admin interface.
+            throw new InvalidArgumentException('This taxonomy is not registered for this record.');
+        }
         if (! current_user_can('edit_post', $postId) || ! current_user_can($taxonomy->cap->assign_terms)) {
             throw new InvalidArgumentException('You do not have permission to change these terms.');
         }
@@ -95,11 +104,22 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
         if ('' === $raw || strlen($raw) > 200) {
             throw new InvalidArgumentException('Choose an allowed term.');
         }
-        $choices = $this->filterChoices($column);
-        if (! array_key_exists($raw, $choices)) {
+        if ($column->choices && ! array_key_exists($raw, $column->choices)) {
             throw new InvalidArgumentException('Choose an allowed term.');
         }
-        if ($column->choices && ! array_key_exists($raw, $column->choices)) {
+
+        $choices = $this->filterChoices($column);
+        if ($choices) {
+            if (! array_key_exists($raw, $choices)) {
+                throw new InvalidArgumentException('Choose an allowed term.');
+            }
+            return $raw;
+        }
+
+        // The taxonomy is larger than the bounded choice list, so only a
+        // configured allowlist may be used, and each slug is looked up on its
+        // own rather than by loading every term.
+        if (! $column->choices || false === $this->termId($column, $raw)) {
             throw new InvalidArgumentException('Choose an allowed term.');
         }
         return $raw;
@@ -175,6 +195,20 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
         $this->assign($postId, $column, array($value));
     }
 
+    /**
+     * Resolve one slug to its term id, or false when no such term exists.
+     */
+    private function termId(ColumnDefinition $column, string $slug): int|false
+    {
+        $key = $column->field . ':' . $slug;
+        if (array_key_exists($key, $this->slugCache)) {
+            return $this->slugCache[$key];
+        }
+        $term = get_term_by('slug', $slug, $column->field);
+        $this->slugCache[$key] = $term instanceof \WP_Term ? (int) $term->term_id : false;
+        return $this->slugCache[$key];
+    }
+
     public function supportsRemoval(ColumnDefinition $column): bool
     {
         unset($column);
@@ -213,14 +247,34 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
         );
     }
 
+    public function transactionalTables(ColumnDefinition $column): array
+    {
+        unset($column);
+        global $wpdb;
+        return array($wpdb->posts, $wpdb->term_relationships, $wpdb->term_taxonomy);
+    }
+
     /**
      * Replace the whole term set for this taxonomy and confirm the result.
+     *
+     * Slugs are resolved to existing term ids first. Passing a slug string
+     * would let WordPress create a missing term, which would turn an undo of a
+     * deleted term into term creation by someone who may only assign terms.
      *
      * @param list<string> $slugs Exact term slugs to assign.
      */
     private function assign(int $postId, ColumnDefinition $column, array $slugs): void
     {
-        $result = wp_set_object_terms($postId, $slugs, $column->field, false);
+        $termIds = array();
+        foreach ($slugs as $slug) {
+            $termId = $this->termId($column, $slug);
+            if (false === $termId) {
+                throw new RuntimeException('One of these terms no longer exists, so the change was refused.');
+            }
+            $termIds[] = $termId;
+        }
+
+        $result = wp_set_object_terms($postId, $termIds, $column->field, false);
         if (is_wp_error($result)) {
             throw new RuntimeException('The terms could not be saved.');
         }

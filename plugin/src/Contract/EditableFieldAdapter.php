@@ -35,4 +35,14 @@ interface EditableFieldAdapter extends FieldAdapter
 
     /** @return array{column_key: string, source: string, field_name: string} */
     public function auditDescriptor(ColumnDefinition $column): array;
+
+    /**
+     * Every database table this adapter writes inside the edit transaction.
+     *
+     * A write is refused unless all of them use a transaction engine, so a
+     * rollback can never leave part of a change behind.
+     *
+     * @return list<string>
+     */
+    public function transactionalTables(ColumnDefinition $column): array;
 }

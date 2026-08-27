@@ -15,6 +15,18 @@
 		return response.json();
 	}
 
+	// The server sends the same cell markup the page itself rendered, already
+	// reduced to a fixed tag allowlist by wp_kses. Using it keeps a thumbnail,
+	// a link, or a term list looking like a cell instead of a raw value.
+	function paintCell(cell, data) {
+		const target = cell.querySelector('.nat-value');
+		if ('string' === typeof data.html) {
+			target.innerHTML = data.html;
+			return;
+		}
+		target.textContent = data.text;
+	}
+
 	function failureMessage(payload, fallback) {
 		return payload.data && payload.data.message
 			? payload.data.message
@@ -84,7 +96,7 @@
 			sendUndo(undo.dataset.auditId, undo.dataset.nonce)
 				.then(function (data) {
 					const cell = undo.closest('.nat-cell');
-					cell.querySelector('.nat-value').textContent = data.text;
+					paintCell(cell, data);
 					syncEditor(cell.querySelector('.nat-inline-editor'), data);
 					message(
 						cell.querySelector('.nat-inline-editor'),
@@ -165,8 +177,7 @@
 					throw new Error(failureMessage(payload, 'Save failed.'));
 				}
 				const cell = form.closest('.nat-cell');
-				cell.querySelector('.nat-value').textContent =
-					payload.data.text;
+				paintCell(cell, payload.data);
 				syncEditor(form, payload.data);
 				message(form, payload.data.savedLabel, false);
 				addUndoButton(cell, form, payload.data);
@@ -314,7 +325,7 @@
 			if (!cell) {
 				return;
 			}
-			cell.querySelector('.nat-value').textContent = change.text;
+			paintCell(cell, change);
 			syncEditor(cell.querySelector('.nat-inline-editor'), change);
 		});
 
@@ -367,8 +378,7 @@
 							'"]'
 					);
 					if (cell) {
-						cell.querySelector('.nat-value').textContent =
-							result.text;
+						paintCell(cell, result);
 						syncEditor(
 							cell.querySelector('.nat-inline-editor'),
 							result

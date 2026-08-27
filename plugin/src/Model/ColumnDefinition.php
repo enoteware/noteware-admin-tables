@@ -116,9 +116,15 @@ final class ColumnDefinition
         return $this->filterable && in_array($operator, $this->operators, true);
     }
 
+    /**
+     * The operator a request falls back to.
+     *
+     * Always the exact operator. A presence operator must be asked for by name,
+     * so an unfiltered screen can never arrive already filtered.
+     */
     public function defaultOperator(): string
     {
-        return $this->operators[0] ?? 'is';
+        return 'is';
     }
 
     private function assertOperators(): void

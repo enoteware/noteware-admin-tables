@@ -64,6 +64,8 @@ ACF number, boolean, and date fields stay display only. Their stored formats nee
 | `replaces` | The built-in WordPress column this column takes the place of, such as `date`. |
 | `empty_label` | The text shown when nothing is stored. |
 
+A presence operator only applies when the request names it. A column may list `empty` first, and the first page of the screen still shows every record.
+
 `empty` matches a record with no stored row and a record whose stored value is an empty string. `not_empty` requires both a stored row and a value that is not empty. That keeps a blank link, which is a meaningful state on many sites, findable in both directions.
 
 ### Screen options

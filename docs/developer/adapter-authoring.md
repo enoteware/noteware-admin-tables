@@ -30,6 +30,7 @@ An editable adapter must implement the complete `EditableFieldAdapter` contract.
 - `write` uses a public WordPress API.
 - `restore` supports every state claimed by the adapter.
 - `supportsRemoval` states whether the column can be cleared at all.
+- `transactionalTables` names every table the write touches, so the edit is refused unless all of them use a transaction engine.
 - `auditDescriptor` returns stable trusted identifiers for the audit row.
 
 `supportsRemoval` exists because not every editable field has a meaningful empty state. A post title and a post slug are always present, so the inline editor does not offer a remove control for them and the endpoint refuses a remove request. A featured image, a metadata row, an ACF value, and a term set can all be cleared.
@@ -42,6 +43,8 @@ The adapter does not trust a capability name, field key, type, or comparison rul
 
 ACF values are written with `update_field()` and cleared with `delete_field()`. The plugin never writes an ACF value as raw post metadata. WordPress metadata writes expect slashed input, so the validated value is passed through `wp_slash()` first. After every write the adapter reads the value back and confirms the ACF reference row, `_` plus the field name, still holds the configured field key. A mismatch fails the transaction so no half-written ACF value is kept.
 
+A required ACF field is never removable and never accepts an empty value. An ACF value whose reference row is missing or points elsewhere is refused rather than repaired.
+
 An ACF value has three distinct states that the adapter preserves: no rows at all, a stored empty string with its reference row, and a stored value. Clearing removes both rows. Saving an empty string keeps both rows.
 
 ### Links
@@ -50,7 +53,7 @@ A link is validated without being rewritten. An empty string stays empty. Any ot
 
 ### Taxonomies
 
-WordPress has no explicit empty term assignment, so a record with no terms reads as absent rather than empty. The stored value is a sorted list of term slugs. An inline edit replaces the whole term set with one chosen term, and clearing removes every term. Undo restores the complete previous slug list, not just the single term the edit replaced, so a multiple term record is never quietly reduced. Filter and edit values must match a live term slug, and the configured `choices` map, when present, narrows that list further.
+WordPress has no explicit empty term assignment, so a record with no terms reads as absent rather than empty. The stored value is a sorted list of term slugs. An inline edit replaces the whole term set with one chosen term, and clearing removes every term. Undo restores the complete previous slug list, not just the single term the edit replaced, so a multiple term record is never quietly reduced. Filter and edit values must match a live term slug, and the configured `choices` map, when present, narrows that list further. When a taxonomy has more terms than the bounded choice list, only a configured allowlist may be used and each slug is resolved on its own rather than by loading every term. Writes resolve slugs to existing term ids, so an undo can never create a term that was deleted. The taxonomy must also be registered for the screen's post type.
 
 ### Native fields
 

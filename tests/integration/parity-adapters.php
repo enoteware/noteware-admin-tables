@@ -334,6 +334,93 @@ $edits->processUndo(
 );
 $assert(array('topic-1', 'topic-2') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'Undoing a clear must restore every term.');
 
+// Undo must refuse to recreate a term that no longer exists.
+$disposable = wp_insert_term('Disposable topic', 'nat_demo_topic', array('slug' => 'topic-disposable'));
+if (! is_wp_error($disposable)) {
+    wp_set_object_terms($term_post, array('topic-disposable'), 'nat_demo_topic', false);
+    clean_object_term_cache($term_post, 'nat_demo_topic');
+    $disposable_state  = $taxonomy_adapter->read($term_post, $topic_column);
+    $disposable_result = $edits->processEdit($edit_request($term_post, 'nat_demo_topic', 'topic-1', $disposable_state->hash()));
+    wp_delete_term((int) $disposable['term_id'], 'nat_demo_topic');
+    clean_object_term_cache($term_post, 'nat_demo_topic');
+    $expect_failure(
+        static fn (): array => $edits->processUndo(
+            array('audit_id' => (string) $disposable_result['auditId'], 'nonce' => (string) $disposable_result['undoNonce'])
+        ),
+        'Undo must refuse to recreate a deleted term.'
+    );
+    $assert(array('topic-1') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'A refused undo must leave the current terms in place.');
+    wp_set_object_terms($term_post, array('topic-1', 'topic-2'), 'nat_demo_topic', false);
+    clean_object_term_cache($term_post, 'nat_demo_topic');
+}
+
+// A taxonomy that belongs to another post type must fail closed.
+register_taxonomy(
+    'nat_test_foreign',
+    array('page'),
+    array('public' => false, 'show_ui' => true, 'hierarchical' => false)
+);
+$foreign_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+    array(
+        'key'        => 'nat_test_foreign',
+        'label'      => 'Foreign taxonomy',
+        'source'     => 'taxonomy',
+        'type'       => 'select',
+        'field'      => 'nat_test_foreign',
+        'filterable' => true,
+        'editable'   => true,
+        'operators'  => array('is', 'empty', 'not_empty'),
+    )
+);
+$expect_failure(
+    static function () use ($taxonomy_adapter, $term_post, $foreign_column): void {
+        $taxonomy_adapter->authorize($term_post, $foreign_column);
+    },
+    'A taxonomy registered for another post type must be refused.'
+);
+
+// A required ACF field must not be cleared or emptied from the list screen.
+acf_add_local_field_group(
+    array(
+        'key'      => 'group_nat_test_required',
+        'title'    => 'Required test field',
+        'fields'   => array(
+            array(
+                'key'      => 'field_nat_test_required',
+                'label'    => 'Required text',
+                'name'     => 'nat_test_required',
+                'type'     => 'text',
+                'required' => 1,
+            ),
+        ),
+        'location' => array(),
+    )
+);
+$required_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+    array(
+        'key'       => 'nat_test_required',
+        'label'     => 'Required text',
+        'source'    => 'acf',
+        'type'      => 'text',
+        'field'     => 'nat_test_required',
+        'field_key' => 'field_nat_test_required',
+        'editable'  => true,
+    )
+);
+$required_adapter = new AcfAdapter();
+$assert($required_adapter->supports($required_column), 'The required test field must resolve.');
+$assert(! $required_adapter->supportsRemoval($required_column), 'A required ACF field must not offer removal.');
+$expect_failure(
+    static fn (): mixed => $required_adapter->validate($required_column, ''),
+    'A required ACF field must reject an empty value.'
+);
+$expect_failure(
+    static function () use ($required_adapter, $native_post, $required_column): void {
+        $required_adapter->remove($native_post, $required_column, new Noteware\AdminTables\Model\StoredValue(true, 'kept'));
+    },
+    'A required ACF field must refuse a removal request.'
+);
+
 // --- Native title, slug, featured image, and permalink ----------------------
 
 $title_state  = $native_adapter->read($native_post, $title_column);
@@ -412,6 +499,36 @@ $expect_failure(
     static fn (): array => $edits->processEdit($edit_request($native_post, 'nat_demo_permalink', 'https://example.test/', $permalink_state->hash())),
     'A permalink column must stay read only.'
 );
+
+// A saved edit returns the same cell markup the page renders, so a thumbnail,
+// a link, or a term list keeps its shape without a reload.
+$html_state  = $acf_adapter->read($link_post, $link_column);
+$html_result = $edits->processEdit($edit_request($link_post, 'nat_demo_link', 'https://example.test/apply/markup', $html_state->hash()));
+$assert(str_contains((string) ($html_result['html'] ?? ''), '<a class="nat-link"'), 'A saved link edit must return the rendered cell markup.');
+$edits->processUndo(array('audit_id' => (string) $html_result['auditId'], 'nonce' => (string) $html_result['undoNonce']));
+
+$thumb_markup_state = $native_adapter->read($native_post, $thumb_column);
+$thumb_markup       = $edits->processEdit($edit_request($native_post, 'nat_demo_thumb', (string) $fixture_image_id, $thumb_markup_state->hash()));
+$assert(str_contains((string) ($thumb_markup['html'] ?? ''), 'nat-thumbnail'), 'A saved featured image must return thumbnail markup rather than a raw ID.');
+
+// Saving the same featured image again must succeed, not fail as a stale write.
+$same_state  = $native_adapter->read($native_post, $thumb_column);
+$same_result = $edits->processEdit($edit_request($native_post, 'nat_demo_thumb', (string) $fixture_image_id, $same_state->hash()));
+$assert($fixture_image_id === (int) get_post_thumbnail_id($native_post), 'Saving an unchanged featured image must succeed.');
+$edits->processUndo(array('audit_id' => (string) $same_result['auditId'], 'nonce' => (string) $same_result['undoNonce']));
+$edits->processUndo(array('audit_id' => (string) $thumb_markup['auditId'], 'nonce' => (string) $thumb_markup['undoNonce']));
+
+// An inconsistent ACF reference row must refuse the write instead of quietly
+// repairing a pair that undo could not restore.
+$reference_backup = get_post_meta($link_post, '_nat_demo_link', true);
+update_post_meta($link_post, '_nat_demo_link', 'field_wrong_reference');
+$broken_state = $acf_adapter->read($link_post, $link_column);
+$expect_failure(
+    static fn (): array => $edits->processEdit($edit_request($link_post, 'nat_demo_link', 'https://example.test/apply/broken', $broken_state->hash())),
+    'An inconsistent ACF field reference must refuse the write.'
+);
+$assert('field_wrong_reference' === get_post_meta($link_post, '_nat_demo_link', true), 'A refused write must leave the inconsistent reference untouched.');
+update_post_meta($link_post, '_nat_demo_link', $reference_backup);
 
 WP_CLI::line('NAT_PARITY_STAGE=adapters');
 
@@ -492,6 +609,50 @@ $assert(array(0) === $bad_term->get('post__in'), 'An unknown term filter must fa
 
 $bad_operator = $run_filter(array('nat_op_nat_demo_link' => 'like'));
 $assert(array(0) === $bad_operator->get('post__in'), 'An unsupported filter operator must fail closed.');
+
+// A column whose only operator is a presence operator must not filter a plain
+// list screen, and must still work when the request asks for it.
+add_filter(
+    'noteware_admin_tables_config',
+    static function (array $config): array {
+        $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_presence',
+            'label'      => 'Presence only',
+            'source'     => 'meta',
+            'type'       => 'text',
+            'field'      => 'nat_demo_note',
+            'filterable' => true,
+            'operators'  => array('empty'),
+        );
+        return $config;
+    },
+    30
+);
+$presence_configuration = new Configuration();
+$presence_adapters      = $adapters;
+$run_presence           = static function (array $request) use ($presence_configuration, $presence_adapters): WP_Query {
+    $previous_get   = $_GET;
+    $previous_query = $GLOBALS['wp_the_query'] ?? null;
+    $previous_wp    = $GLOBALS['wp_query'] ?? null;
+    set_current_screen('edit-nat_demo_record');
+    $query = new WP_Query();
+    $query->set('post_type', 'nat_demo_record');
+    $GLOBALS['wp_the_query'] = $query;
+    $GLOBALS['wp_query']     = $query;
+    $_GET                    = array_merge(array('post_type' => 'nat_demo_record'), $request);
+    (new QueryController($presence_configuration, $presence_adapters))->apply($query);
+    $_GET                    = $previous_get;
+    $GLOBALS['wp_the_query'] = $previous_query;
+    $GLOBALS['wp_query']     = $previous_wp;
+    return $query;
+};
+
+$unrequested = $run_presence(array());
+$assert(! is_array($unrequested->get('meta_query')) || array() === $unrequested->get('meta_query'), 'A presence-only column must not filter a screen that did not ask for it.');
+$assert(array(0) !== $unrequested->get('post__in'), 'A presence-only column must not fail closed on a plain list screen.');
+
+$requested = $run_presence(array('nat_op_nat_test_presence' => 'empty'));
+$assert(str_contains((string) wp_json_encode($requested->get('meta_query')), 'NOT EXISTS'), 'A presence-only column must filter when the request asks for it.');
 
 $unenabled_operator = $run_filter(array('nat_op_nat_demo_enabled' => 'empty'));
 $assert(array(0) === $unenabled_operator->get('post__in'), 'An operator a column did not enable must fail closed.');

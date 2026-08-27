@@ -21,8 +21,22 @@ All notable changes to this project are documented in this file.
 - The audit table records whether a row was created by an undo. Schema version 3.
 - Inline editor and bulk panel fields use `data-field` instead of `name`, so they are never serialized into the WordPress list filter URL.
 
+### Security
+
+- Every table an edit writes is now checked for a transaction engine, not just post metadata and the audit table. A taxonomy or native write on a non transactional table is refused instead of committing outside the transaction.
+- Undo resolves audited term slugs to existing terms. A user who may only assign terms can no longer recreate a deleted term through undo.
+- A required ACF field can no longer be cleared or emptied from a list screen.
+- An ACF value whose field reference row is missing or wrong is refused instead of silently repaired, because the audit snapshot could not restore the original pair.
+- A taxonomy column that is not registered for the screen's post type fails closed at the screen, query, and write boundaries.
+
 ### Fixed
 
+- A presence filter no longer applies to a screen that did not ask for it. A column whose only operator is is-empty or has-a-value left the first page silently filtered with no way to clear it.
+- Saving a featured image that was already set no longer fails as a stale write.
+- A failed edit now clears the post and object term caches as well as the metadata cache, so a persistent object cache cannot keep serving a rolled back value.
+- A saved or undone cell keeps its rendered shape. A thumbnail, a link, and a term list no longer collapse to a raw value until the next page load.
+- A taxonomy larger than the bounded choice list keeps working through a configured allowlist, validated by a direct term lookup, instead of rejecting every choice it displayed.
+- The reload-safe undo lookup is bounded by the page size, so a heavily edited screen cannot scan an unbounded audit history.
 - The dependency license report failed when an optional peer dependency listed in the lockfile was not installed. It now reports only what npm installed and prints how many entries it skipped.
 - A list screen with several editable columns could produce a filter request that the web server rejected as too long.
 - Plugin cells could overflow their table cell and cover a neighbouring column on a screen with many columns.

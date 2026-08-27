@@ -38,6 +38,9 @@ final class AcfAdapter implements EditableFieldAdapter
     /** @var array<string, array<string, string>> */
     private array $choiceCache = array();
 
+    /** @var array<string, bool> */
+    private array $requiredCache = array();
+
     public function source(): string
     {
         return 'acf';
@@ -81,6 +84,9 @@ final class AcfAdapter implements EditableFieldAdapter
             && isset(self::TYPES[$column->type], $field['type'], $field['name'])
             && $column->field === $field['name']
             && self::TYPES[$column->type] === $field['type'];
+        if ($supported && is_array($field)) {
+            $this->requiredCache[$cacheKey] = ! empty($field['required']);
+        }
         if ($supported && 'select' === $column->type) {
             $supported = $this->cacheSelectChoices($column, $field, $cacheKey);
         }
@@ -112,10 +118,15 @@ final class AcfAdapter implements EditableFieldAdapter
 
     public function validate(ColumnDefinition $column, mixed $value): mixed
     {
-        if ('select' === $column->type) {
-            return $this->validateChoice($column, $value);
+        $validated = 'select' === $column->type
+            ? $this->validateChoice($column, $value)
+            : ValueValidator::validate($column, $value);
+
+        if ('' === $validated && $this->isRequired($column)) {
+            throw new InvalidArgumentException('This field is required, so it cannot be left empty.');
         }
-        return ValueValidator::validate($column, $value);
+
+        return $validated;
     }
 
     public function sanitize(ColumnDefinition $column, mixed $value): mixed
@@ -158,6 +169,8 @@ final class AcfAdapter implements EditableFieldAdapter
             throw new InvalidArgumentException('This adapter only writes validated string values.');
         }
 
+        $this->assertReferenceBeforeWrite($postId, $column);
+
         // WordPress metadata writes expect slashed input, and ACF passes the value straight through.
         update_field($this->selector($column), wp_slash($value), $postId);
 
@@ -168,17 +181,35 @@ final class AcfAdapter implements EditableFieldAdapter
         $this->assertReference($postId, $column);
     }
 
+    /**
+     * A required ACF field must never be cleared from a list screen.
+     *
+     * delete_field() writes straight past the form validation ACF would apply,
+     * so honouring the field's own required setting is the only thing that
+     * keeps a required value present.
+     */
     public function supportsRemoval(ColumnDefinition $column): bool
     {
-        unset($column);
-        return true;
+        return ! $this->isRequired($column);
+    }
+
+    public function isRequired(ColumnDefinition $column): bool
+    {
+        if (! $this->supports($column)) {
+            return false;
+        }
+        return $this->requiredCache[$this->cacheKey($column)] ?? false;
     }
 
     public function remove(int $postId, ColumnDefinition $column, StoredValue $expected): void
     {
+        if ($this->isRequired($column)) {
+            throw new InvalidArgumentException('This field is required, so it cannot be cleared.');
+        }
         if (! $expected->exists) {
             return;
         }
+        $this->assertReferenceBeforeWrite($postId, $column);
         delete_field($this->selector($column), $postId);
 
         if (metadata_exists('post', $postId, $column->field) || metadata_exists('post', $postId, $this->referenceKey($column))) {
@@ -202,6 +233,13 @@ final class AcfAdapter implements EditableFieldAdapter
             'source'     => $this->source(),
             'field_name' => $column->field,
         );
+    }
+
+    public function transactionalTables(ColumnDefinition $column): array
+    {
+        unset($column);
+        global $wpdb;
+        return array($wpdb->posts, $wpdb->postmeta);
     }
 
     /**
@@ -259,6 +297,25 @@ final class AcfAdapter implements EditableFieldAdapter
         }
         $this->choiceCache[$cacheKey] = $choices;
         return true;
+    }
+
+    /**
+     * Refuse to touch a value whose ACF reference row is inconsistent.
+     *
+     * Writing anyway would silently repair the reference, and the audit
+     * snapshot only records the value, so an undo could not restore the pair
+     * that was there before.
+     */
+    private function assertReferenceBeforeWrite(int $postId, ColumnDefinition $column): void
+    {
+        $referenceKey = $this->referenceKey($column);
+        if (! metadata_exists('post', $postId, $column->field) && ! metadata_exists('post', $postId, $referenceKey)) {
+            return;
+        }
+        $reference = get_post_meta($postId, $referenceKey, true);
+        if (! is_string($reference) || $reference !== $column->fieldKey) {
+            throw new RuntimeException('This record stores an inconsistent field reference. Repair the record before editing it here.');
+        }
     }
 
     private function assertReference(int $postId, ColumnDefinition $column): void

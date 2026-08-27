@@ -136,4 +136,11 @@ final class MetaAdapter implements EditableFieldAdapter
             'field_name' => $column->field,
         );
     }
+
+    public function transactionalTables(ColumnDefinition $column): array
+    {
+        unset($column);
+        global $wpdb;
+        return array($wpdb->posts, $wpdb->postmeta);
+    }
 }

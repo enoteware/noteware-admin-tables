@@ -56,3 +56,7 @@ A filterable column may now enable more than one operator. The allowlist is exac
 - Native columns still support `is` only, because their filters map onto fixed `WP_Query` arguments.
 
 Plugin taxonomy clauses are grouped with `AND` and then combined with any pre-existing taxonomy query through a top-level `AND`, mirroring the existing metadata rule.
+
+## Amendment, 2026-08-27: presence operators are opt in
+
+A presence operator applies only when the request names it through the column's `nat_op_` parameter. The exact operator is always the fallback. Without this rule a column that lists `empty` first would arrive already filtered on the first page load, and a column that offers only a presence operator would have no way to show every record.

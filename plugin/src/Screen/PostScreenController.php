@@ -169,7 +169,7 @@ final class PostScreenController
         }
 
         echo '<div class="nat-cell" data-column="' . esc_attr($column->key) . '"><span class="nat-value">';
-        echo wp_kses($this->renderer->value($column, $stored), $this->valueAllowedHtml());
+        echo wp_kses($this->renderer->safeValue($column, $stored), ColumnRenderer::allowedValueHtml());
         echo '</span>' . wp_kses($editor, $this->editorAllowedHtml()) . '</div>';
     }
 
@@ -256,15 +256,26 @@ final class PostScreenController
             if (! $column->filterable || ! $this->adapters->get($column->source)->supports($column)) {
                 continue;
             }
+            if ('taxonomy' === $column->source && ! is_object_in_taxonomy($postType, $column->field)) {
+                continue;
+            }
+            if ('taxonomy' === $column->source && ! $this->choicesFor($column) && $column->supportsOperator('is')) {
+                // Without a bounded choice list there is no safe exact control.
+                continue;
+            }
             $name     = 'nat_filter_' . $column->key;
             $operator = 'nat_op_' . $column->key;
             $selected = $this->requestValue($name);
 
             if (count($column->operators) > 1) {
+                $chosen = $this->requestValue($operator);
+                if ('' === $chosen) {
+                    $chosen = $column->supportsOperator('is') ? 'is' : $column->operators[0];
+                }
                 echo '<label class="screen-reader-text" for="' . esc_attr($operator) . '">' . esc_html(sprintf(__('%s filter type', 'noteware-admin-tables'), $column->label)) . '</label>';
                 echo '<select id="' . esc_attr($operator) . '" name="' . esc_attr($operator) . '" class="nat-filter-operator">';
                 foreach ($column->operators as $available) {
-                    echo '<option value="' . esc_attr($available) . '"' . selected($this->requestValue($operator), $available, false) . '>' . esc_html($this->operatorLabel($available)) . '</option>';
+                    echo '<option value="' . esc_attr($available) . '"' . selected($chosen, $available, false) . '>' . esc_html($this->operatorLabel($available)) . '</option>';
                 }
                 echo '</select>';
             }
@@ -449,34 +460,6 @@ final class PostScreenController
     {
         $postType = isset($_GET['post_type']) && is_string($_GET['post_type']) ? sanitize_key(wp_unslash($_GET['post_type'])) : 'post';
         return '' !== $postType ? $postType : 'post';
-    }
-
-    /**
-     * @return array<string, array<string, bool>>
-     */
-    private function valueAllowedHtml(): array
-    {
-        return array(
-            'span' => array('class' => true),
-            'a'    => array(
-                'class'  => true,
-                'href'   => true,
-                'rel'    => true,
-                'target' => true,
-            ),
-            'img'  => array(
-                'class'    => true,
-                'src'      => true,
-                'srcset'   => true,
-                'sizes'    => true,
-                'alt'      => true,
-                'width'    => true,
-                'height'   => true,
-                'loading'  => true,
-                'decoding' => true,
-                'style'    => true,
-            ),
-        );
     }
 
     /**

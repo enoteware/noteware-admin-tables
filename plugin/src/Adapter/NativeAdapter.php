@@ -188,6 +188,14 @@ final class NativeAdapter implements EditableFieldAdapter
         );
     }
 
+    public function transactionalTables(ColumnDefinition $column): array
+    {
+        global $wpdb;
+        return 'featured_image' === $column->field
+            ? array($wpdb->posts, $wpdb->postmeta)
+            : array($wpdb->posts);
+    }
+
     private function title(string $raw): string
     {
         $title = sanitize_text_field($raw);
@@ -229,10 +237,11 @@ final class NativeAdapter implements EditableFieldAdapter
 
     private function writeThumbnail(int $postId, ColumnDefinition $column, int $attachmentId): void
     {
-        if (! set_post_thumbnail($postId, $attachmentId)) {
-            throw new RuntimeException('The featured image could not be saved.');
-        }
+        // set_post_thumbnail() reports false when the stored value is already
+        // the requested one, so the readback is the only reliable check.
+        set_post_thumbnail($postId, $attachmentId);
         clean_post_cache($postId);
+
         $stored = $this->read($postId, $column);
         if (! $stored->exists || $stored->value !== $attachmentId) {
             throw new RuntimeException('The saved featured image could not be confirmed. No change was kept.');

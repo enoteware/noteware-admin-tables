@@ -90,7 +90,7 @@ final class EditController
             throw new InvalidArgumentException('This field cannot be cleared.');
         }
 
-        $this->audit->begin();
+        $this->audit->begin($adapter->transactionalTables($column));
         try {
             $adapter->lock($postId, $column);
             $before = $adapter->read($postId, $column);
@@ -113,6 +113,7 @@ final class EditController
 
         return array(
             'text'       => $this->renderer->text($column, $after),
+            'html'       => $this->renderer->safeValue($column, $after),
             'auditId'    => $auditId,
             'undoNonce'  => wp_create_nonce($adapter->nonceAction('undo', $auditId, $column)),
             'undoLabel'  => __('Undo', 'noteware-admin-tables'),
@@ -162,7 +163,7 @@ final class EditController
         $expected = $this->decodeStored((string) $row['after_value']);
         $target   = $this->decodeStored((string) $row['before_value']);
 
-        $this->audit->begin();
+        $this->audit->begin($adapter->transactionalTables($column));
         try {
             $adapter->lock($postId, $column);
             $current = $adapter->read($postId, $column);
@@ -182,6 +183,7 @@ final class EditController
 
         return array(
             'text'     => $this->renderer->text($column, $restored),
+            'html'     => $this->renderer->safeValue($column, $restored),
             'message'  => __('Edit undone.', 'noteware-admin-tables'),
             'snapshot' => $restored->hash(),
             'value'    => $this->renderer->editableValue($restored),
@@ -243,7 +245,11 @@ final class EditController
         } catch (Throwable $error) {
             $rollback = $error;
         } finally {
+            // A failed write may already have primed the metadata, post, or
+            // term caches, so every one of them is dropped before rethrowing.
             wp_cache_delete($postId, 'post_meta');
+            clean_post_cache($postId);
+            clean_object_term_cache($postId, (string) get_post_type($postId));
         }
         if ($rollback) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- The previous exception is chained, not rendered.

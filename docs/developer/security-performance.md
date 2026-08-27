@@ -20,6 +20,18 @@ Test missing and invalid nonces, object access, field access, unknown columns, a
 
 Editable metadata must have one row for its configured key. Duplicate rows are rejected before update or removal because the visible scalar snapshot cannot represent them safely. An ACF column locks both its value row and its field reference row, so an edit cannot race a reference change.
 
+Every adapter names the database tables its write touches, and an edit is refused unless all of them use a transaction engine. Checking only post metadata would let a taxonomy or native write commit outside the transaction.
+
+A failed edit clears the metadata cache, the post cache, and the object term cache before the error is raised, so a persistent object cache cannot keep serving a value the transaction rolled back.
+
+An ACF value whose field reference row is missing or points at a different field is refused rather than repaired in place. The audit snapshot records the value, not the reference, so a silent repair would leave undo unable to restore the original pair.
+
+A required ACF field cannot be cleared or emptied from a list screen. `delete_field()` writes past the validation ACF would apply on its own form, so the field's own required setting is the only thing that keeps the value present.
+
+Undo resolves every audited term slug to an existing term before assigning it. Passing a slug string would let WordPress create a missing term, which would turn an undo of a deleted term into term creation by someone who may only assign terms.
+
+A taxonomy column must be registered for the screen's post type. A taxonomy with an admin interface but a different post type is refused at the screen, the query, and the write.
+
 Bulk editing runs the same seven checks. It validates the submitted value once, before any record is touched, then repeats the capability check, lock, snapshot read, write, readback, and audit record on each record inside its own transaction. A denied or failing record is reported by ID and does not roll back the records that succeeded. See [ADR 0007](../adr/0007-bulk-editing-boundaries.md).
 
 Inline editor controls and the bulk panel are rendered inside the WordPress list filter form, so their fields carry `data-field` rather than `name`. A `name` would serialize every rendered editor into the filter URL, which breaks the screen with a request that is too long as soon as a site configures several editable columns. An integration assertion guards this.
@@ -57,7 +69,7 @@ The list page is the batch boundary. Once preload finishes:
 - ACF definitions and choices are reused;
 - attachment records are loaded as one bounded set;
 - term assignments for the page are primed in one call;
-- undoable audit rows for the page are read in one bounded query; and
+- undoable audit rows for the page are read in one query bounded by the page size and the configured column cap; and
 - no operation reads the complete post table.
 
 Automatic preload requires the exact configured edit screen and the main query. It does not prime caches on dashboards, other post-type screens, or secondary queries.

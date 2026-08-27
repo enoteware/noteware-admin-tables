@@ -14,6 +14,45 @@ use Noteware\AdminTables\Model\StoredValue;
 
 final class ColumnRenderer
 {
+    /**
+     * The cell markup, already reduced to a fixed tag allowlist.
+     *
+     * Both the rendered page and the edit responses use this, so a cell can
+     * never carry markup the screen would not have rendered itself.
+     */
+    public function safeValue(ColumnDefinition $column, StoredValue $stored): string
+    {
+        return wp_kses($this->value($column, $stored), self::allowedValueHtml());
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
+    public static function allowedValueHtml(): array
+    {
+        return array(
+            'span' => array('class' => true),
+            'a'    => array(
+                'class'  => true,
+                'href'   => true,
+                'rel'    => true,
+                'target' => true,
+            ),
+            'img'  => array(
+                'class'    => true,
+                'src'      => true,
+                'srcset'   => true,
+                'sizes'    => true,
+                'alt'      => true,
+                'width'    => true,
+                'height'   => true,
+                'loading'  => true,
+                'decoding' => true,
+                'style'    => true,
+            ),
+        );
+    }
+
     public function value(ColumnDefinition $column, StoredValue $stored): string
     {
         if (! $stored->exists) {

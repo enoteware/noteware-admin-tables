@@ -19,7 +19,14 @@ final class AuditRepository
     /** How long a completed edit stays undoable from the list screen. */
     private const UNDO_WINDOW_SECONDS = 86400;
 
-    private bool $transactionalTablesVerified = false;
+    /** The configuration cap on columns per screen. */
+    private const MAX_COLUMNS_PER_SCREEN = 100;
+
+    /** A hard ceiling for the page-scoped undo lookup. */
+    private const MAX_UNDO_ROWS = 2000;
+
+    /** @var array<string, bool> */
+    private array $transactionalTablesVerified = array();
 
     /** @var array<string, int> */
     private array $undoIndex = array();
@@ -60,7 +67,7 @@ final class AuditRepository
         ) ENGINE=InnoDB {$charset};", $this->table());
         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         dbDelta($sql);
-        $this->assertTransactionalTables();
+        $this->assertTransactionalTables(array());
         update_option('nat_audit_schema_version', self::SCHEMA_VERSION, false);
     }
 
@@ -111,6 +118,9 @@ final class AuditRepository
         global $wpdb;
         $placeholders = implode(', ', array_fill(0, count($postIds), '%d'));
         $since        = gmdate('Y-m-d H:i:s', time() - self::UNDO_WINDOW_SECONDS);
+        // Newest first, and bounded by the page size, so a heavily edited
+        // screen cannot make this scan an unbounded audit history.
+        $limit = min(self::MAX_UNDO_ROWS, count($postIds) * self::MAX_COLUMNS_PER_SCREEN);
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The placeholder list is generated from a counted array of integers.
         $rows = $wpdb->get_results(
             $wpdb->prepare(
@@ -120,8 +130,9 @@ final class AuditRepository
                    AND undone_at IS NULL
                    AND is_undo = 0
                    AND created_at >= %s
-                 ORDER BY id ASC",
-                array_merge(array($this->table()), $postIds, array($userId, $since))
+                 ORDER BY id DESC
+                 LIMIT %d",
+                array_merge(array($this->table()), $postIds, array($userId, $since, $limit))
             ),
             ARRAY_A
         );
@@ -131,7 +142,10 @@ final class AuditRepository
             if (! is_array($row) || ! isset($row['id'], $row['post_id'], $row['column_key'])) {
                 continue;
             }
-            $this->undoIndex[$row['post_id'] . ':' . $row['column_key']] = (int) $row['id'];
+            $key = $row['post_id'] . ':' . $row['column_key'];
+            if (! isset($this->undoIndex[$key])) {
+                $this->undoIndex[$key] = (int) $row['id'];
+            }
         }
     }
 
@@ -168,10 +182,13 @@ final class AuditRepository
         return 1 === $updated;
     }
 
-    public function begin(): void
+    /**
+     * @param list<string> $tables Extra tables this edit will write.
+     */
+    public function begin(array $tables = array()): void
     {
         global $wpdb;
-        $this->assertTransactionalTables();
+        $this->assertTransactionalTables($tables);
         if (false === $wpdb->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE')) {
             throw new RuntimeException('The edit transaction isolation level could not be set.');
         }
@@ -202,30 +219,45 @@ final class AuditRepository
         return $wpdb->prefix . 'nat_edit_audit';
     }
 
-    private function assertTransactionalTables(): void
+    /**
+     * Every table an edit writes must use a transaction engine.
+     *
+     * The adapter names the tables its own write touches, so a taxonomy or
+     * native write is checked as strictly as a metadata write.
+     *
+     * @param list<string> $tables Extra tables this edit will write.
+     */
+    private function assertTransactionalTables(array $tables): void
     {
-        if ($this->transactionalTablesVerified) {
+        global $wpdb;
+
+        $required = array_values(array_unique(array_merge(array($wpdb->postmeta, $this->table()), $tables)));
+        $pending  = array_values(array_filter($required, fn (string $table): bool => ! ($this->transactionalTablesVerified[$table] ?? false)));
+        if (! $pending) {
             return;
         }
 
-        global $wpdb;
+        $placeholders = implode(', ', array_fill(0, count($pending), '%s'));
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The placeholder list is generated from a counted array of table names.
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (%s, %s)',
-                $wpdb->postmeta,
-                $this->table()
+                "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ({$placeholders})",
+                $pending
             ),
             ARRAY_A
         );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $engines = array();
-        foreach ($rows as $row) {
-            if (isset($row['TABLE_NAME'], $row['ENGINE'])) {
+        foreach ((array) $rows as $row) {
+            if (is_array($row) && isset($row['TABLE_NAME'], $row['ENGINE'])) {
                 $engines[(string) $row['TABLE_NAME']] = strtoupper((string) $row['ENGINE']);
             }
         }
-        if ('INNODB' !== ($engines[$wpdb->postmeta] ?? '') || 'INNODB' !== ($engines[$this->table()] ?? '')) {
-            throw new RuntimeException('Editable metadata and audit storage must use the InnoDB transaction engine.');
+        foreach ($pending as $table) {
+            if ('INNODB' !== ($engines[$table] ?? '')) {
+                throw new RuntimeException('Every table an edit writes must use the InnoDB transaction engine.');
+            }
+            $this->transactionalTablesVerified[$table] = true;
         }
-        $this->transactionalTablesVerified = true;
     }
 }

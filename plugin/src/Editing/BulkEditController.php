@@ -120,7 +120,7 @@ final class BulkEditController
         }
         $adapter->authorize($postId, $column);
 
-        $this->audit->begin();
+        $this->audit->begin($adapter->transactionalTables($column));
         try {
             $adapter->lock($postId, $column);
             $before = $adapter->read($postId, $column);
@@ -141,6 +141,7 @@ final class BulkEditController
             } finally {
                 wp_cache_delete($postId, 'post_meta');
                 clean_post_cache($postId);
+                clean_object_term_cache($postId, $postType);
             }
             if ($rollback) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- The previous exception is chained, not rendered.
@@ -153,6 +154,7 @@ final class BulkEditController
             'postId'    => $postId,
             'column'    => $column->key,
             'text'      => $this->renderer->text($column, $after),
+            'html'      => $this->renderer->safeValue($column, $after),
             'auditId'   => $auditId,
             'undoNonce' => wp_create_nonce($adapter->nonceAction('undo', $auditId, $column)),
             'snapshot'  => $after->hash(),

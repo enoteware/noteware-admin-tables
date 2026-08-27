@@ -109,7 +109,9 @@ test.describe('parity surface', () => {
 		);
 		await cell.getByRole('button', { name: 'Save' }).click();
 		expect((await saved).status()).toBe(200);
-		await expect(cell.locator('.nat-value')).toHaveText(
+		// The saved cell keeps its link shape without a reload.
+		await expect(cell.locator('.nat-value a.nat-link')).toHaveAttribute(
+			'href',
 			'https://example.test/apply/browser-proof'
 		);
 		await page.screenshot({
@@ -130,14 +132,15 @@ test.describe('parity surface', () => {
 
 		const undo = page.locator(`${selector} .nat-undo`);
 		await expect(undo).toHaveCount(1);
+		const undoneAuditId = await undo.getAttribute('data-audit-id');
 		const undone = page.waitForResponse((response) =>
 			response.url().includes('admin-ajax.php')
 		);
 		await undo.click();
 		expect((await undone).status()).toBe(200);
-		await expect(page.locator(`${selector} .nat-value`)).toHaveText(
-			original
-		);
+		await expect(
+			page.locator(`${selector} .nat-value a.nat-link`)
+		).toHaveAttribute('href', original);
 
 		// Second reload: the restored link must be the exact original.
 		await page.goto(ONE_RECORD);
@@ -145,7 +148,12 @@ test.describe('parity surface', () => {
 			'href',
 			original
 		);
-		await expect(page.locator(`${selector} .nat-undo`)).toHaveCount(0);
+		// The edit that was just undone must not be offered again.
+		await expect(
+			page.locator(
+				`${selector} .nat-undo[data-audit-id="${undoneAuditId}"]`
+			)
+		).toHaveCount(0);
 		await page.screenshot({
 			path: 'tests/artifacts/parity-link-after-undo-reload.png',
 			fullPage: true,

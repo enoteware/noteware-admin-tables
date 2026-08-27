@@ -79,6 +79,10 @@ final class QueryController
                 $this->rejectFilter($query, $column, __('This field configuration does not support filtering.', 'noteware-admin-tables'));
                 continue;
             }
+            if ('taxonomy' === $column->source && ! is_object_in_taxonomy($postType, $column->field)) {
+                $this->rejectFilter($query, $column, __('This taxonomy is not registered for this screen.', 'noteware-admin-tables'));
+                continue;
+            }
 
             if ('taxonomy' === $column->source) {
                 $clause = $this->taxonomyClause($query, $column, $operator);
@@ -125,11 +129,15 @@ final class QueryController
 
     /**
      * Resolve the operator this request asks for, or null when no filter applies.
+     *
+     * A presence operator only ever applies when the request names it. An
+     * unfiltered list screen must show every record, so no configuration order
+     * can make the first page arrive already filtered.
      */
     private function requestedOperator(\WP_Query $query, ColumnDefinition $column): ?string
     {
         $operatorParameter = 'nat_op_' . $column->key;
-        $operator          = $column->defaultOperator();
+        $operator          = 'is';
 
         if (isset($_GET[$operatorParameter])) {
             if (! is_string($_GET[$operatorParameter])) {
@@ -148,6 +156,11 @@ final class QueryController
 
         if ('is' !== $operator) {
             return $operator;
+        }
+        if (! $column->supportsOperator('is')) {
+            // The column only offers presence filters, and this request did not
+            // ask for one, so the screen stays unfiltered.
+            return null;
         }
 
         $parameter = 'nat_filter_' . $column->key;
