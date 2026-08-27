@@ -41,7 +41,7 @@ All notable changes to this project are documented in this file.
 - The reload-safe undo lookup is bounded by the page size, so a heavily edited screen cannot scan an unbounded audit history.
 - A bulk edit now replaces a cell's existing undo control instead of leaving one that points at an older audit row and fails when clicked.
 - The bulk editor offers a clear option for every column whose adapter supports removal, so a taxonomy or select value can be cleared in bulk instead of only overwritten.
-- A column whose only operator is a presence operator renders that control, so the filter can actually be used.
+- A column whose only operator is a presence operator renders that control, with a neutral first option so the initial screen matches an unfiltered list.
 - A taxonomy larger than the bounded choice list keeps its presence filters, which never needed a term list.
 - The page-scoped undo lookup selects the newest row per cell in the database, so repeated edits of one cell cannot hide another cell's undo control.
 - The repository scan fails when it cannot run, instead of passing silently on a tool error, and it no longer names the things it prohibits. It also uses `grep`, which is always present. Ripgrep is not installed on the continuous integration runner, so the previous version of this scan had never actually run there.

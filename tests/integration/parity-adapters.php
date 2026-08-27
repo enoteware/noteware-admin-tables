@@ -718,6 +718,7 @@ ob_start();
 $presence_markup = (string) ob_get_clean();
 $assert(str_contains($presence_markup, 'id="nat_op_nat_test_presence_ui"'), 'A presence-only column must render its operator control.');
 $assert(! str_contains($presence_markup, 'id="nat_filter_nat_test_presence_ui"'), 'A presence-only column must not render an exact value control.');
+$assert(str_contains($presence_markup, '<option value="" selected'), 'A presence-only control must start on a neutral option that matches an unfiltered list.');
 
 // Repeated edits on one cell must not push another cell out of the undo index.
 $undo_post   = $fixture_post(29);

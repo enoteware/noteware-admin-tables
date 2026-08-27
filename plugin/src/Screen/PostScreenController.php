@@ -283,11 +283,16 @@ final class PostScreenController
             // the server through this control.
             if (array('is') !== $operators) {
                 $chosen = $this->requestValue($operator);
-                if ('' === $chosen || ! in_array($chosen, $operators, true)) {
-                    $chosen = in_array('is', $operators, true) ? 'is' : $operators[0];
+                if (! in_array($chosen, $operators, true)) {
+                    $chosen = in_array('is', $operators, true) ? 'is' : '';
                 }
                 echo '<label class="screen-reader-text" for="' . esc_attr($operator) . '">' . esc_html(sprintf(__('%s filter type', 'noteware-admin-tables'), $column->label)) . '</label>';
                 echo '<select id="' . esc_attr($operator) . '" name="' . esc_attr($operator) . '" class="nat-filter-operator">';
+                if (! $exactAvailable) {
+                    // Without an exact option there is no other neutral choice,
+                    // so the control offers one that matches an unfiltered list.
+                    echo '<option value=""' . selected($chosen, '', false) . '>' . esc_html(sprintf(__('All %s', 'noteware-admin-tables'), $column->label)) . '</option>';
+                }
                 foreach ($operators as $available) {
                     echo '<option value="' . esc_attr($available) . '"' . selected($chosen, $available, false) . '>' . esc_html($this->operatorLabel($available)) . '</option>';
                 }
