@@ -26,6 +26,9 @@ interface EditableFieldAdapter extends FieldAdapter
 
     public function write(int $postId, ColumnDefinition $column, mixed $value, StoredValue $expected): void;
 
+    /** Whether this column allows an operator to clear the stored value. */
+    public function supportsRemoval(ColumnDefinition $column): bool;
+
     public function remove(int $postId, ColumnDefinition $column, StoredValue $expected): void;
 
     public function restore(int $postId, ColumnDefinition $column, StoredValue $current, StoredValue $target): void;

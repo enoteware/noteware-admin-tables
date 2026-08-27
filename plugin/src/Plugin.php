@@ -13,8 +13,10 @@ use Noteware\AdminTables\Adapter\AcfAdapter;
 use Noteware\AdminTables\Adapter\AdapterRegistry;
 use Noteware\AdminTables\Adapter\MetaAdapter;
 use Noteware\AdminTables\Adapter\NativeAdapter;
+use Noteware\AdminTables\Adapter\TaxonomyAdapter;
 use Noteware\AdminTables\Audit\AuditRepository;
 use Noteware\AdminTables\Config\Configuration;
+use Noteware\AdminTables\Editing\BulkEditController;
 use Noteware\AdminTables\Editing\EditController;
 use Noteware\AdminTables\Query\QueryController;
 use Noteware\AdminTables\Screen\PostScreenController;
@@ -32,13 +34,14 @@ final class Plugin
         self::$booted = true;
 
         $configuration = new Configuration();
-        $adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter()));
+        $adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter(), new TaxonomyAdapter()));
         $audit         = new AuditRepository();
 
         add_action('admin_init', array($audit, 'maybeInstall'));
-        (new PostScreenController($configuration, $adapters))->register();
+        (new PostScreenController($configuration, $adapters, $audit))->register();
         (new QueryController($configuration, $adapters))->register();
         (new EditController($configuration, $adapters, $audit))->register();
+        (new BulkEditController($configuration, $adapters, $audit))->register();
 
         do_action('noteware_admin_tables_loaded', $configuration, $adapters);
     }

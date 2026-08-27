@@ -103,6 +103,12 @@ final class MetaAdapter implements EditableFieldAdapter
         }
     }
 
+    public function supportsRemoval(ColumnDefinition $column): bool
+    {
+        unset($column);
+        return true;
+    }
+
     public function remove(int $postId, ColumnDefinition $column, StoredValue $expected): void
     {
         if (! $expected->exists) {
