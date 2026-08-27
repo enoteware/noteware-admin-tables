@@ -193,7 +193,34 @@ test.describe('parity surface', () => {
 	test('bulk edits the selected records and undoes them together', async ({
 		page,
 	}) => {
-		await page.goto(`${SCREEN}&nat_op_nat_demo_link=not_empty`);
+		const list = `${SCREEN}&nat_op_nat_demo_link=not_empty&orderby=nat_nat_demo_id&order=asc`;
+		await page.goto(list);
+
+		const firstRowId = await page
+			.locator('#the-list tr')
+			.first()
+			.getAttribute('id');
+		const firstCell = page.locator(
+			`#${firstRowId} .nat-cell[data-column="nat_demo_link"]`
+		);
+		const originalLink = await firstCell
+			.locator('.nat-value a.nat-link')
+			.getAttribute('href');
+
+		// An earlier inline edit leaves an undo control on the cell.
+		await firstCell.getByRole('button', { name: 'Edit' }).click();
+		await firstCell
+			.locator('[data-field="value"]')
+			.fill('https://example.test/apply/before-bulk');
+		const inlineSaved = page.waitForResponse((response) =>
+			response.url().includes('admin-ajax.php')
+		);
+		await firstCell.getByRole('button', { name: 'Save' }).click();
+		expect((await inlineSaved).status()).toBe(200);
+		const inlineAuditId = await firstCell
+			.locator('.nat-undo')
+			.getAttribute('data-audit-id');
+		expect(inlineAuditId).toBeTruthy();
 
 		const checkboxes = page.locator('#the-list input[name="post[]"]');
 		await checkboxes.nth(0).check();
@@ -224,6 +251,18 @@ test.describe('parity surface', () => {
 		await expect(page.locator('.nat-bulk-status')).toContainText(
 			'2 changed, 0 not changed.'
 		);
+		await expect(
+			firstCell.locator('.nat-value a.nat-link')
+		).toHaveAttribute('href', 'https://example.test/apply/bulk-proof');
+
+		// The stale undo control must be replaced, not left pointing at the
+		// earlier audit row.
+		await expect(firstCell.locator('.nat-undo')).toHaveCount(1);
+		await expect(firstCell.locator('.nat-undo')).not.toHaveAttribute(
+			'data-audit-id',
+			String(inlineAuditId)
+		);
+
 		await page.screenshot({
 			path: 'tests/artifacts/parity-bulk-applied.png',
 			fullPage: true,
@@ -233,9 +272,32 @@ test.describe('parity surface', () => {
 		await expect(page.locator('.nat-bulk-status')).toContainText(
 			'2 undone, 0 not undone.'
 		);
+		await expect(
+			firstCell.locator('.nat-value a.nat-link')
+		).toHaveAttribute('href', 'https://example.test/apply/before-bulk');
 		await page.screenshot({
 			path: 'tests/artifacts/parity-bulk-undone.png',
 			fullPage: true,
 		});
+
+		// The earlier inline edit is still reversible after a reload.
+		await page.goto(list);
+		const persistedUndo = page.locator(
+			`#${firstRowId} .nat-cell[data-column="nat_demo_link"] .nat-undo[data-audit-id="${inlineAuditId}"]`
+		);
+		await expect(persistedUndo).toHaveCount(1);
+		const restored = page.waitForResponse((response) =>
+			response.url().includes('admin-ajax.php')
+		);
+		await persistedUndo.click();
+		expect((await restored).status()).toBe(200);
+		await page.goto(list);
+		await expect(
+			page
+				.locator(
+					`#${firstRowId} .nat-cell[data-column="nat_demo_link"]`
+				)
+				.locator('a.nat-link')
+		).toHaveAttribute('href', originalLink);
 	});
 });

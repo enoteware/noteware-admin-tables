@@ -37,6 +37,7 @@ All notable changes to this project are documented in this file.
 - A saved or undone cell keeps its rendered shape. A thumbnail, a link, and a term list no longer collapse to a raw value until the next page load.
 - A taxonomy larger than the bounded choice list keeps working through a configured allowlist, validated by a direct term lookup, instead of rejecting every choice it displayed.
 - The reload-safe undo lookup is bounded by the page size, so a heavily edited screen cannot scan an unbounded audit history.
+- A bulk edit now replaces a cell's existing undo control instead of leaving one that points at an older audit row and fails when clicked.
 - The dependency license report failed when an optional peer dependency listed in the lockfile was not installed. It now reports only what npm installed and prints how many entries it skipped.
 - A list screen with several editable columns could produce a filter request that the web server rejected as too long.
 - Plugin cells could overflow their table cell and cover a neighbouring column on a screen with many columns.

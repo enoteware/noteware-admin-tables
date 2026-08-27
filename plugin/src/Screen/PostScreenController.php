@@ -393,6 +393,7 @@ final class PostScreenController
             array(
                 'ajaxUrl'          => admin_url('admin-ajax.php'),
                 'noSelectionLabel' => __('Select at least one record first.', 'noteware-admin-tables'),
+                'undoLabel'        => __('Undo', 'noteware-admin-tables'),
                 'workingLabel'     => __('Working.', 'noteware-admin-tables'),
                 'undoAllLabel'     => __('Undo these changes', 'noteware-admin-tables'),
             )

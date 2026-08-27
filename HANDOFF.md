@@ -46,6 +46,7 @@ was accepted and fixed, with a test for each.
   choice they displayed.
 - A taxonomy registered for another post type was accepted.
 - The reload-safe undo lookup was bounded by time but not by result count.
+- A bulk edit left a cell's earlier undo control in place, pointing at an audit row that no longer matched the value.
 
 ## Notable fixes in this branch
 

@@ -180,7 +180,7 @@
 				paintCell(cell, payload.data);
 				syncEditor(form, payload.data);
 				message(form, payload.data.savedLabel, false);
-				addUndoButton(cell, form, payload.data);
+				setCellUndo(cell, payload.data);
 				form.hidden = true;
 				const trigger = cell.querySelector('.nat-edit-button');
 				trigger.setAttribute('aria-expanded', 'false');
@@ -194,18 +194,29 @@
 			});
 	}
 
-	function addUndoButton(cell, form, data) {
+	// A cell may already carry an undo control from an earlier edit or from
+	// the page load. Replacing it keeps the visible control pointing at the
+	// audit row that actually matches the current value.
+	function setCellUndo(cell, data) {
 		const previousUndo = cell.querySelector('.nat-undo');
 		if (previousUndo) {
 			previousUndo.remove();
 		}
+		if (!data.auditId || !data.undoNonce) {
+			return;
+		}
 		const undo = document.createElement('button');
 		undo.type = 'button';
 		undo.className = 'button-link nat-undo';
-		undo.textContent = data.undoLabel;
+		undo.textContent = data.undoLabel || natAdminTables.undoLabel;
 		undo.dataset.auditId = data.auditId;
 		undo.dataset.nonce = data.undoNonce;
-		form.after(undo);
+		const editor = cell.querySelector('.nat-inline-editor');
+		if (editor) {
+			editor.after(undo);
+			return;
+		}
+		cell.appendChild(undo);
 	}
 
 	function syncEditor(form, data) {
@@ -327,6 +338,7 @@
 			}
 			paintCell(cell, change);
 			syncEditor(cell.querySelector('.nat-inline-editor'), change);
+			setCellUndo(cell, change);
 		});
 
 		if (data.failed.length) {
@@ -383,6 +395,11 @@
 							cell.querySelector('.nat-inline-editor'),
 							result
 						);
+						// The undone edit must not stay clickable.
+						const stale = cell.querySelector('.nat-undo');
+						if (stale) {
+							stale.remove();
+						}
 					}
 				})
 				.catch(function () {
