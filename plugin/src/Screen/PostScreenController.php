@@ -259,29 +259,46 @@ final class PostScreenController
             if ('taxonomy' === $column->source && ! is_object_in_taxonomy($postType, $column->field)) {
                 continue;
             }
-            if ('taxonomy' === $column->source && ! $this->choicesFor($column) && $column->supportsOperator('is')) {
-                // Without a bounded choice list there is no safe exact control.
-                continue;
-            }
             $name     = 'nat_filter_' . $column->key;
             $operator = 'nat_op_' . $column->key;
             $selected = $this->requestValue($name);
+            $choices  = $this->choicesFor($column);
 
-            if (count($column->operators) > 1) {
+            // A taxonomy larger than the bounded choice list has no safe exact
+            // control, but its presence operators still work without one.
+            $exactAvailable = $column->supportsOperator('is')
+                && ('taxonomy' !== $column->source || (bool) $choices);
+            $operators      = array_values(
+                array_filter(
+                    $column->operators,
+                    static fn (string $available): bool => 'is' !== $available || $exactAvailable
+                )
+            );
+            if (! $operators) {
+                continue;
+            }
+
+            // The operator control is rendered whenever anything beyond the
+            // plain exact filter is offered. A presence operator can only reach
+            // the server through this control.
+            if (array('is') !== $operators) {
                 $chosen = $this->requestValue($operator);
-                if ('' === $chosen) {
-                    $chosen = $column->supportsOperator('is') ? 'is' : $column->operators[0];
+                if ('' === $chosen || ! in_array($chosen, $operators, true)) {
+                    $chosen = in_array('is', $operators, true) ? 'is' : $operators[0];
                 }
                 echo '<label class="screen-reader-text" for="' . esc_attr($operator) . '">' . esc_html(sprintf(__('%s filter type', 'noteware-admin-tables'), $column->label)) . '</label>';
                 echo '<select id="' . esc_attr($operator) . '" name="' . esc_attr($operator) . '" class="nat-filter-operator">';
-                foreach ($column->operators as $available) {
+                foreach ($operators as $available) {
                     echo '<option value="' . esc_attr($available) . '"' . selected($chosen, $available, false) . '>' . esc_html($this->operatorLabel($available)) . '</option>';
                 }
                 echo '</select>';
             }
 
+            if (! $exactAvailable) {
+                continue;
+            }
+
             echo '<label class="screen-reader-text" for="' . esc_attr($name) . '">' . esc_html(sprintf(__('Filter by %s', 'noteware-admin-tables'), $column->label)) . '</label>';
-            $choices = $this->choicesFor($column);
             if ($choices) {
                 echo '<select id="' . esc_attr($name) . '" name="' . esc_attr($name) . '"><option value="">' . esc_html(sprintf(__('All %s', 'noteware-admin-tables'), $column->label)) . '</option>';
                 foreach ($choices as $value => $label) {
@@ -330,9 +347,14 @@ final class PostScreenController
         }
         echo '</select>';
         foreach ($columns as $column) {
+            $adapter = $this->adapters->get($column->source);
             echo '<div class="nat-bulk-control" data-column="' . esc_attr($column->key) . '" hidden>';
             echo '<label class="screen-reader-text" for="' . esc_attr('nat-bulk-value-' . $column->key) . '">' . esc_html(sprintf(__('New %s', 'noteware-admin-tables'), $column->label)) . '</label>';
             echo wp_kses($this->renderer->bulkControl($column, $this->choicesFor($column)), $this->editorAllowedHtml());
+            if ($adapter instanceof EditableFieldAdapter && $adapter->supportsRemoval($column)) {
+                echo '<label class="nat-bulk-remove"><input type="checkbox" data-field="remove" value="1"> '
+                    . esc_html__('Clear the stored value instead', 'noteware-admin-tables') . '</label>';
+            }
             echo '</div>';
         }
         echo '<input type="hidden" id="nat-bulk-nonce" value="' . esc_attr(wp_create_nonce('nat_bulk_edit_' . $postType)) . '">';

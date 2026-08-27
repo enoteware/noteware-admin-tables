@@ -118,19 +118,20 @@ final class AuditRepository
         global $wpdb;
         $placeholders = implode(', ', array_fill(0, count($postIds), '%d'));
         $since        = gmdate('Y-m-d H:i:s', time() - self::UNDO_WINDOW_SECONDS);
-        // Newest first, and bounded by the page size, so a heavily edited
-        // screen cannot make this scan an unbounded audit history.
+        // Group in the database so the result holds exactly one row per cell.
+        // Limiting raw rows instead would let repeated edits of one cell push
+        // another cell's newest edit out of the result.
         $limit = min(self::MAX_UNDO_ROWS, count($postIds) * self::MAX_COLUMNS_PER_SCREEN);
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The placeholder list is generated from a counted array of integers.
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT id, post_id, column_key FROM %i
+                "SELECT MAX(id) AS id, post_id, column_key FROM %i
                  WHERE post_id IN ({$placeholders})
                    AND user_id = %d
                    AND undone_at IS NULL
                    AND is_undo = 0
                    AND created_at >= %s
-                 ORDER BY id DESC
+                 GROUP BY post_id, column_key
                  LIMIT %d",
                 array_merge(array($this->table()), $postIds, array($userId, $since, $limit))
             ),
@@ -142,10 +143,7 @@ final class AuditRepository
             if (! is_array($row) || ! isset($row['id'], $row['post_id'], $row['column_key'])) {
                 continue;
             }
-            $key = $row['post_id'] . ':' . $row['column_key'];
-            if (! isset($this->undoIndex[$key])) {
-                $this->undoIndex[$key] = (int) $row['id'];
-            }
+            $this->undoIndex[$row['post_id'] . ':' . $row['column_key']] = (int) $row['id'];
         }
     }
 

@@ -421,6 +421,19 @@ $expect_failure(
     'A required ACF field must refuse a removal request.'
 );
 
+// Undo must refuse to restore a value the field would refuse today.
+$expect_failure(
+    static function () use ($required_adapter, $native_post, $required_column): void {
+        $required_adapter->restore(
+            $native_post,
+            $required_column,
+            new Noteware\AdminTables\Model\StoredValue(true, 'current'),
+            new Noteware\AdminTables\Model\StoredValue(true, '')
+        );
+    },
+    'Undo must refuse to restore an empty value into a required ACF field.'
+);
+
 // --- Native title, slug, featured image, and permalink ----------------------
 
 $title_state  = $native_adapter->read($native_post, $title_column);
@@ -671,10 +684,62 @@ $screen_controller->renderBulkEditor('top');
 $bulk_markup = (string) ob_get_clean();
 $assert(str_contains($bulk_markup, 'id="nat-bulk-panel"'), 'The bulk panel must render for a bulk-editable screen.');
 $assert(! str_contains($bulk_markup, 'name="'), 'Bulk panel fields must not be submitted with the WordPress list filter form.');
+$assert(str_contains($bulk_markup, 'data-field="remove"'), 'The bulk panel must offer removal for a column that supports it.');
+
+ob_start();
+$screen_controller->renderFilters('nat_demo_record');
+$filter_markup = (string) ob_get_clean();
+$assert(str_contains($filter_markup, 'id="nat_op_nat_demo_link"'), 'A column with presence operators must render an operator control.');
+$assert(str_contains($filter_markup, 'id="nat_filter_nat_demo_link"'), 'A column with the exact operator must render a value control.');
 
 ob_start();
 $screen_controller->renderBulkEditor('bottom');
 $assert('' === (string) ob_get_clean(), 'The bulk panel must render once per screen.');
+
+// A column whose only operator is a presence operator must still be usable.
+add_filter(
+    'noteware_admin_tables_config',
+    static function (array $config): array {
+        $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_presence_ui',
+            'label'      => 'Presence only control',
+            'source'     => 'meta',
+            'type'       => 'text',
+            'field'      => 'nat_demo_note',
+            'filterable' => true,
+            'operators'  => array('empty'),
+        );
+        return $config;
+    },
+    25
+);
+ob_start();
+(new PostScreenController(new Configuration(), $adapters, $audit))->renderFilters('nat_demo_record');
+$presence_markup = (string) ob_get_clean();
+$assert(str_contains($presence_markup, 'id="nat_op_nat_test_presence_ui"'), 'A presence-only column must render its operator control.');
+$assert(! str_contains($presence_markup, 'id="nat_filter_nat_test_presence_ui"'), 'A presence-only column must not render an exact value control.');
+
+// Repeated edits on one cell must not push another cell out of the undo index.
+$undo_post   = $fixture_post(29);
+$undo_column = $configuration->column('nat_demo_record', 'nat_demo_note');
+if (null !== $undo_column && $undo_post > 0) {
+    $undo_ids = array();
+    for ($round = 1; $round <= 3; $round++) {
+        $state      = $adapters->get('meta')->read($undo_post, $undo_column);
+        $undo_ids[] = (int) $edits->processEdit(
+            $edit_request($undo_post, 'nat_demo_note', 'Undo index round ' . $round, $state->hash())
+        )['auditId'];
+    }
+    $audit->preloadUndoable(array($undo_post), get_current_user_id());
+    $assert(max($undo_ids) === $audit->undoableId($undo_post, 'nat_demo_note'), 'The undo index must offer the newest edit for a cell.');
+    foreach (array_reverse($undo_ids) as $undo_id) {
+        try {
+            $edits->processUndo(array('audit_id' => (string) $undo_id, 'nonce' => wp_create_nonce('nat_undo_' . $undo_id)));
+        } catch (Throwable) {
+            continue;
+        }
+    }
+}
 
 WP_CLI::line('NAT_PARITY_STAGE=screen');
 
@@ -766,6 +831,18 @@ $expect_failure(
     static fn (): array => $bulk->processBulkEdit($bulk_request($bulk_posts, 'nat_demo_link', 'javascript:alert(1)')),
     'An unsafe bulk link must be rejected before any record is touched.'
 );
+
+// Bulk removal must clear the stored value, not store an empty one.
+$clear_targets = array($bulk_posts[1]);
+$clear_before  = get_post_meta($clear_targets[0], 'nat_demo_link', true);
+$clear_result  = $bulk->processBulkEdit(array_merge($bulk_request($clear_targets, 'nat_demo_link', ''), array('remove' => '1')));
+$assert(1 === count($clear_result['changed']), 'A bulk removal must change the selected record.');
+$assert(! metadata_exists('post', $clear_targets[0], 'nat_demo_link'), 'A bulk removal must delete the stored value.');
+$assert(! metadata_exists('post', $clear_targets[0], '_nat_demo_link'), 'A bulk removal must delete the ACF reference row too.');
+foreach ($clear_result['changed'] as $change) {
+    $edits->processUndo(array('audit_id' => (string) $change['auditId'], 'nonce' => (string) $change['undoNonce']));
+}
+$assert($clear_before === get_post_meta($clear_targets[0], 'nat_demo_link', true), 'Undoing a bulk removal must restore the value.');
 foreach ($bulk_posts as $bulk_post) {
     $assert('javascript:alert(1)' !== get_post_meta($bulk_post, 'nat_demo_link', true), 'A rejected bulk value must never be written.');
 }

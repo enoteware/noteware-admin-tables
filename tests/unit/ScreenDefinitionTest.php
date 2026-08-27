@@ -19,14 +19,14 @@ final class ScreenDefinitionTest extends TestCase
     public function test_a_screen_records_order_removal_and_replacement(): void
     {
         $screen = new ScreenDefinition(
-            array($this->column('apply', 'title'), $this->column('note', null)),
+            array($this->column('apply', 'date'), $this->column('note', null)),
             array('cb', 'nat_apply', 'nat_note'),
             array('comments')
         );
 
         self::assertSame(array('cb', 'nat_apply', 'nat_note'), $screen->order);
         self::assertSame(array('comments'), $screen->remove);
-        self::assertSame(array('title'), $screen->replacedColumns());
+        self::assertSame(array('date'), $screen->replacedColumns());
     }
 
     public function test_duplicate_column_keys_are_rejected(): void
@@ -39,6 +39,12 @@ final class ScreenDefinitionTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         new ScreenDefinition(array($this->column('apply', null)), array(), array('cb'));
+    }
+
+    public function test_the_title_column_cannot_be_removed(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new ScreenDefinition(array($this->column('apply', null)), array(), array('title'));
     }
 
     public function test_plugin_columns_cannot_be_removed_through_the_removal_list(): void
@@ -62,7 +68,7 @@ final class ScreenDefinitionTest extends TestCase
     public function test_a_replaced_column_cannot_also_be_removed(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new ScreenDefinition(array($this->column('apply', 'title')), array(), array('title'));
+        new ScreenDefinition(array($this->column('apply', 'date')), array(), array('date'));
     }
 
     public function test_repeated_order_entries_are_rejected(): void

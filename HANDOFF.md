@@ -11,7 +11,7 @@ The parity branch adds writable ACF text, link, and select fields, a taxonomy ad
 ## Local proof
 
 - Composer validation, PHP syntax, PHPCS, PHPStan, and PHPUnit pass.
-- PHPUnit has 75 tests and 123 assertions.
+- PHPUnit has 77 tests and 125 assertions.
 - WordPress integration checks cover the previous milestone plus ACF link display, editing, removal, explicit empty storage, ACF reference-row preservation, exact undo restoration, rejection of unsafe and malformed links, stale link snapshots, ACF select writes bounded by the live field and the configured allowlist, taxonomy display, single-term editing, clearing, full multiple-term undo, native title, slug, and featured-image editing, read-only permalinks, configured column order, built-in column removal and replacement, scoped column widths, the empty and has-a-value operators for metadata and taxonomy columns, fail-closed handling of an operator a column did not enable, editor and bulk-panel markup with no submittable field names, and every bulk editing success and failure boundary.
 - JavaScript lint and Jest pass.
 - Playwright has 10 passing tests, including the configured layout, a narrow-column target-size guard, a link edit followed by reload, undo, and a second reload, the empty and has-a-value filters, a bulk edit and group undo, keyboard focus, invalid nonce handling, and scoped WCAG checks in open, error, and OS-dark-preference states.
@@ -47,6 +47,13 @@ was accepted and fixed, with a test for each.
 - A taxonomy registered for another post type was accepted.
 - The reload-safe undo lookup was bounded by time but not by result count.
 - A bulk edit left a cell's earlier undo control in place, pointing at an audit row that no longer matched the value.
+- A configuration could replace or remove the WordPress checkbox and title columns, which strips row actions and bulk selection from every row. Both are now reserved.
+- The bulk editor had no way to clear a value, so a taxonomy or select column could only be overwritten.
+- A column whose only operator was a presence operator rendered no control at all, so the filter could never be used.
+- A taxonomy larger than the bounded choice list lost its presence filters as well as its exact filter.
+- The page-scoped undo lookup limited raw rows, so repeated edits of one cell could hide another cell's undo control. It now groups in the database.
+- Undo restored an audited ACF value without re-validating it against the field as it is now.
+- The repository scan named the client and competitor it prohibits, and a broken pattern made it pass silently. It is now generic and fails when it cannot run.
 
 ## Notable fixes in this branch
 

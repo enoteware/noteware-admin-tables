@@ -92,14 +92,14 @@ final class ColumnDefinitionTest extends TestCase
                 'bulk_editable' => true,
                 'operators'     => array('is', 'empty', 'not_empty'),
                 'width'         => '18%',
-                'replaces'      => 'title',
+                'replaces'      => 'date',
                 'empty_label'   => 'No link',
             )
         );
 
         self::assertSame('18%', $column->width);
         self::assertTrue($column->bulkEditable);
-        self::assertSame('title', $column->replaces);
+        self::assertSame('date', $column->replaces);
         self::assertSame(array('is', 'empty', 'not_empty'), $column->operators);
         self::assertSame('is', $column->defaultOperator());
         self::assertTrue($column->supportsOperator('empty'));
@@ -185,6 +185,7 @@ final class ColumnDefinitionTest extends TestCase
         yield 'bad width' => array(array_replace($base, array('width' => '18 percent')));
         yield 'oversized width' => array(array_replace($base, array('width' => '99999px')));
         yield 'checkbox replacement' => array(array_replace($base, array('replaces' => 'cb')));
+        yield 'title replacement' => array(array_replace($base, array('replaces' => 'title')));
         yield 'bad replacement id' => array(array_replace($base, array('replaces' => 'Title Column')));
         yield 'field key without acf' => array(array_replace($base, array('field_key' => 'field_score')));
         yield 'acf date write' => array(array_replace($base, array('source' => 'acf', 'type' => 'date', 'field_key' => 'field_score', 'editable' => true)));

@@ -16,6 +16,7 @@ Noteware Admin Tables is original GPL-2.0-or-later code. Contributors implement 
 - Proprietary assets, icons, screenshots, layouts, text, names, or visual trade dress.
 - Private field keys, client names, production URLs, credentials, database exports, or real user data.
 - Copied documentation or examples from a competing product.
+- The name of a client, a client field, a client host, or a competing product, including in a scanner, a comment, a test, or a branch description.
 - Behavior inferred by bypassing access controls or license checks.
 
 ## Contribution record
@@ -28,7 +29,15 @@ Each pull request states:
 4. No private or licensed material is present.
 5. New dependency licenses were checked.
 
-Reviewers inspect the diff and run the repository clean-room, secret, and dependency checks. A scan supports human review. It does not replace it.
+Reviewers inspect the diff and run the repository secret, example-domain, punctuation, and dependency checks. A scan supports human review. It does not replace it.
+
+## Why this repository does not name what it prohibits
+
+`scripts/clean-room-check.sh` looks for secret shapes, real email addresses, and tracked environment files. It deliberately does not list client names, client field names, client host names, or competing product names.
+
+Writing those names into a scanner would put them in this public repository, which is exactly the disclosure the rule exists to prevent. Splitting a name into concatenated string parts does not help, because the parts sit next to each other and reassemble on sight.
+
+That scan belongs to the private site repository that already knows those names. Its continuous integration scans the vendored copy of this plugin for them before anything is deployed, and it can scan a checkout of this repository the same way before a public merge is approved.
 
 ## Public API references
 

@@ -93,6 +93,11 @@
     margin: 0 0.4rem;
 }
 
+.nat-bulk-remove {
+    display: inline-block;
+    margin: 0 0.4rem;
+}
+
 .nat-bulk-status {
     display: block;
     margin: 0.4rem 0;

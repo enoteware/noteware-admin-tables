@@ -237,6 +237,13 @@ test.describe('parity surface', () => {
 			)
 			.fill('https://example.test/apply/bulk-proof');
 
+		// A column whose adapter can clear a value must offer that in bulk too.
+		await expect(
+			page.locator(
+				'.nat-bulk-control[data-column="nat_demo_link"] [data-field="remove"]'
+			)
+		).toHaveCount(1);
+
 		const panelAxe = await new AxeBuilder({ page })
 			.include('#nat-bulk-panel')
 			.withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])

@@ -269,11 +269,15 @@
 		}
 
 		const select = document.querySelector('.nat-bulk-column');
-		const control = document.querySelector(
-			'.nat-bulk-control[data-column="' +
-				select.value +
-				'"] [data-field="value"]'
+		const panel = document.querySelector(
+			'.nat-bulk-control[data-column="' + select.value + '"]'
 		);
+		const control = panel
+			? panel.querySelector('[data-field="value"]')
+			: null;
+		const removal = panel
+			? panel.querySelector('[data-field="remove"]')
+			: null;
 
 		status.classList.remove('nat-error');
 		status.textContent = natAdminTables.workingLabel;
@@ -288,6 +292,9 @@
 		data.append('nonce', document.getElementById('nat-bulk-nonce').value);
 		data.append('column', select.value);
 		data.append('value', control ? control.value : '');
+		if (removal && removal.checked) {
+			data.append('remove', '1');
+		}
 		ids.forEach(function (id) {
 			data.append('post_ids[]', id);
 		});

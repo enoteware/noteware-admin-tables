@@ -217,13 +217,26 @@ final class AcfAdapter implements EditableFieldAdapter
         }
     }
 
+    /**
+     * Undo re-validates the audited value against the field as it is now.
+     *
+     * A field can gain a required flag or lose a choice after the edit was
+     * made. `update_field()` applies no form validation, so without this an
+     * undo could restore a value the field would refuse today.
+     */
     public function restore(int $postId, ColumnDefinition $column, StoredValue $current, StoredValue $target): void
     {
-        if ($target->exists) {
-            $this->write($postId, $column, $target->value, $current);
+        if (! $target->exists) {
+            $this->remove($postId, $column, $current);
             return;
         }
-        $this->remove($postId, $column, $current);
+
+        $validated = $this->validate($column, $target->value);
+        if ($validated !== $target->value) {
+            throw new RuntimeException('The audited value is no longer valid for this field, so the undo was refused.');
+        }
+
+        $this->write($postId, $column, $validated, $current);
     }
 
     public function auditDescriptor(ColumnDefinition $column): array

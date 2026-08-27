@@ -19,6 +19,9 @@ final class ColumnDefinition
 
     private const OPERATORS = array('is', 'empty', 'not_empty');
 
+    /** Built-in columns WordPress needs for row actions and bulk selection. */
+    public const RESERVED_COLUMNS = array('cb', 'title');
+
     /** @var array<string, list<string>> */
     private const NATIVE_TYPES = array(
         'id'             => array('number', 'text'),
@@ -87,8 +90,11 @@ final class ColumnDefinition
         if (null !== $width && ! preg_match('/^[1-9][0-9]{0,3}(?:px|%|em|rem|ch)$/', $width)) {
             throw new InvalidArgumentException('Column widths must be a bounded CSS length such as 120px or 12%.');
         }
-        if (null !== $replaces && (! preg_match('/^[a-z][a-z0-9_-]*$/', $replaces) || 'cb' === $replaces)) {
-            throw new InvalidArgumentException('A replaced built-in column must be a normal column key and cannot be the checkbox column.');
+        if (null !== $replaces && (! preg_match('/^[a-z][a-z0-9_-]*$/', $replaces) || in_array($replaces, self::RESERVED_COLUMNS, true))) {
+            // WordPress renders the row actions from the title column and bulk
+            // selection from the checkbox column. Replacing either one would
+            // strip Edit, Quick Edit, Trash, View, and selection from a row.
+            throw new InvalidArgumentException('The checkbox and title columns cannot be replaced, because WordPress renders row actions and bulk selection from them.');
         }
 
         $this->assertOperators();

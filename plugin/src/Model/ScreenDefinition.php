@@ -53,8 +53,8 @@ final class ScreenDefinition
             }
         }
         foreach ($this->remove as $id) {
-            if ('cb' === $id) {
-                throw new InvalidArgumentException('The bulk action checkbox column cannot be removed.');
+            if (in_array($id, ColumnDefinition::RESERVED_COLUMNS, true)) {
+                throw new InvalidArgumentException('The checkbox and title columns cannot be removed, because WordPress renders row actions and bulk selection from them.');
             }
             if (str_starts_with($id, self::COLUMN_PREFIX)) {
                 throw new InvalidArgumentException('Remove plugin columns by dropping them from the column list, not the removal list.');

@@ -43,6 +43,8 @@ The adapter does not trust a capability name, field key, type, or comparison rul
 
 ACF values are written with `update_field()` and cleared with `delete_field()`. The plugin never writes an ACF value as raw post metadata. WordPress metadata writes expect slashed input, so the validated value is passed through `wp_slash()` first. After every write the adapter reads the value back and confirms the ACF reference row, `_` plus the field name, still holds the configured field key. A mismatch fails the transaction so no half-written ACF value is kept.
 
+Undo re-validates an audited value against the field as it is now. A field can gain a required flag or lose a select choice after an edit was made, and `update_field()` applies no form validation, so an undo that skipped this could restore a value the field would refuse today.
+
 A required ACF field is never removable and never accepts an empty value. An ACF value whose reference row is missing or points elsewhere is refused rather than repaired.
 
 An ACF value has three distinct states that the adapter preserves: no rows at all, a stored empty string with its reference row, and a stored value. Clearing removes both rows. Saving an empty string keeps both rows.

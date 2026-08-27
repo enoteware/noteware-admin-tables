@@ -23,6 +23,8 @@ All notable changes to this project are documented in this file.
 
 ### Security
 
+- Undo re-validates an audited ACF value against the field as it is now, so a field that became required or lost a choice cannot have an invalid value restored.
+- The checkbox and title columns can no longer be replaced or removed. WordPress renders row actions and bulk selection from them, so a configuration that took either one stripped Edit, Quick Edit, Trash, View, and selection from every row.
 - Every table an edit writes is now checked for a transaction engine, not just post metadata and the audit table. A taxonomy or native write on a non transactional table is refused instead of committing outside the transaction.
 - Undo resolves audited term slugs to existing terms. A user who may only assign terms can no longer recreate a deleted term through undo.
 - A required ACF field can no longer be cleared or emptied from a list screen.
@@ -38,6 +40,11 @@ All notable changes to this project are documented in this file.
 - A taxonomy larger than the bounded choice list keeps working through a configured allowlist, validated by a direct term lookup, instead of rejecting every choice it displayed.
 - The reload-safe undo lookup is bounded by the page size, so a heavily edited screen cannot scan an unbounded audit history.
 - A bulk edit now replaces a cell's existing undo control instead of leaving one that points at an older audit row and fails when clicked.
+- The bulk editor offers a clear option for every column whose adapter supports removal, so a taxonomy or select value can be cleared in bulk instead of only overwritten.
+- A column whose only operator is a presence operator renders that control, so the filter can actually be used.
+- A taxonomy larger than the bounded choice list keeps its presence filters, which never needed a term list.
+- The page-scoped undo lookup selects the newest row per cell in the database, so repeated edits of one cell cannot hide another cell's undo control.
+- The repository scan fails when it cannot run, instead of passing silently on a tool error, and it no longer names the things it prohibits.
 - The dependency license report failed when an optional peer dependency listed in the lockfile was not installed. It now reports only what npm installed and prints how many entries it skipped.
 - A list screen with several editable columns could produce a filter request that the web server rejected as too long.
 - Plugin cells could overflow their table cell and cover a neighbouring column on a screen with many columns.
