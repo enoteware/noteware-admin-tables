@@ -11,11 +11,12 @@ namespace Noteware\AdminTables\Config;
 
 use InvalidArgumentException;
 use Noteware\AdminTables\Model\ColumnDefinition;
+use Noteware\AdminTables\Model\ScreenDefinition;
 
 final class Configuration
 {
-    /** @var array<string, list<ColumnDefinition>>|null */
-    private ?array $columns = null;
+    /** @var array<string, ScreenDefinition>|null */
+    private ?array $screens = null;
 
     /** @return list<string> */
     public function postTypes(): array
@@ -23,10 +24,16 @@ final class Configuration
         return array_keys($this->all());
     }
 
+    public function screen(string $postType): ?ScreenDefinition
+    {
+        return $this->all()[$postType] ?? null;
+    }
+
     /** @return list<ColumnDefinition> */
     public function columns(string $postType): array
     {
-        return $this->all()[$postType] ?? array();
+        $screen = $this->screen($postType);
+        return $screen ? $screen->columns : array();
     }
 
     public function column(string $postType, string $key): ?ColumnDefinition
@@ -39,17 +46,17 @@ final class Configuration
         return null;
     }
 
-    /** @return array<string, list<ColumnDefinition>> */
+    /** @return array<string, ScreenDefinition> */
     private function all(): array
     {
-        if (null !== $this->columns) {
-            return $this->columns;
+        if (null !== $this->screens) {
+            return $this->screens;
         }
 
         /**
          * Supplies site-owned post list-screen configuration.
          *
-         * @param array<string, array{columns?: list<array<string, mixed>>}> $configuration Configuration by post type.
+         * @param array<string, array{columns?: list<array<string, mixed>>, order?: list<string>, remove?: list<string>}> $configuration Configuration by post type.
          */
         $raw = apply_filters('noteware_admin_tables_config', array());
         if (! is_array($raw)) {
@@ -59,12 +66,12 @@ final class Configuration
             throw new InvalidArgumentException('Noteware Admin Tables supports at most 50 configured screens per request.');
         }
 
-        $this->columns = array();
+        $this->screens = array();
         foreach ($raw as $postType => $screen) {
             if (! is_string($postType) || ! post_type_exists($postType) || ! is_array($screen)) {
                 throw new InvalidArgumentException('Each configured screen must name an existing post type.');
             }
-            if (array_diff(array_keys($screen), array('columns'))) {
+            if (array_diff(array_keys($screen), array('columns', 'order', 'remove'))) {
                 throw new InvalidArgumentException('Screen configuration contains an unknown option.');
             }
             $postTypeObject = get_post_type_object($postType);
@@ -74,19 +81,40 @@ final class Configuration
             if (! isset($screen['columns']) || ! is_array($screen['columns']) || count($screen['columns']) > 100) {
                 throw new InvalidArgumentException('Each screen must define no more than 100 columns.');
             }
-            $seen = array();
-            foreach ((array) ($screen['columns'] ?? array()) as $definition) {
+
+            $columns = array();
+            foreach ($screen['columns'] as $definition) {
                 if (! is_array($definition)) {
                     throw new InvalidArgumentException('Each column definition must be an array.');
                 }
-                $column = ColumnDefinition::fromArray($definition);
-                if (isset($seen[$column->key])) {
-                    throw new InvalidArgumentException('Column keys must be unique within a screen.');
-                }
-                $seen[$column->key]          = true;
-                $this->columns[$postType][] = $column;
+                $columns[] = ColumnDefinition::fromArray($definition);
             }
+
+            $this->screens[$postType] = new ScreenDefinition(
+                $columns,
+                $this->idList($screen['order'] ?? array()),
+                $this->idList($screen['remove'] ?? array())
+            );
         }
-        return $this->columns;
+        return $this->screens;
+    }
+
+    /**
+     * @param  mixed $value Raw configured list.
+     * @return list<string>
+     */
+    private function idList(mixed $value): array
+    {
+        if (! is_array($value)) {
+            throw new InvalidArgumentException('Column order and removal options must be arrays of column ids.');
+        }
+        $ids = array();
+        foreach ($value as $id) {
+            if (! is_string($id)) {
+                throw new InvalidArgumentException('Column order and removal options must contain only strings.');
+            }
+            $ids[] = $id;
+        }
+        return $ids;
     }
 }

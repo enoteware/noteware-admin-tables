@@ -12,11 +12,15 @@ namespace Noteware\AdminTables\Query;
 use InvalidArgumentException;
 use Noteware\AdminTables\Adapter\AdapterRegistry;
 use Noteware\AdminTables\Config\Configuration;
+use Noteware\AdminTables\Contract\FilterableFieldAdapter;
 use Noteware\AdminTables\Editing\ValueValidator;
 use Noteware\AdminTables\Model\ColumnDefinition;
+use Noteware\AdminTables\Model\ScreenDefinition;
 
 final class QueryController
 {
+    private const MAX_METADATA_FILTERS = 5;
+
     /** @var list<string> */
     private array $errors = array();
 
@@ -52,77 +56,222 @@ final class QueryController
         }
 
         $orderby = $query->get('orderby');
-        if (is_string($orderby) && str_starts_with($orderby, 'nat_')) {
-            $column = $this->configuration->column($postType, substr($orderby, 4));
+        if (is_string($orderby) && str_starts_with($orderby, ScreenDefinition::COLUMN_PREFIX)) {
+            $column = $this->configuration->column($postType, substr($orderby, strlen(ScreenDefinition::COLUMN_PREFIX)));
             if ($column && $column->sortable && $this->adapters->get($column->source)->supports($column)) {
                 $this->applySort($query, $column);
             }
         }
 
-        $existingMetaQuery = $query->get('meta_query');
-        $existingMetaQuery = is_array($existingMetaQuery) ? $existingMetaQuery : array();
         $pluginMetaFilters = array();
+        $pluginTaxFilters  = array();
         $metadataFilters   = 0;
+
         foreach ($this->configuration->columns($postType) as $column) {
             if (! $column->filterable) {
                 continue;
             }
-            $parameter = 'nat_filter_' . $column->key;
-            if (! isset($_GET[$parameter])) {
-                continue;
-            }
-            if (! is_string($_GET[$parameter])) {
-                $this->rejectFilter($query, $column);
-                continue;
-            }
-            if ('' === $_GET[$parameter]) {
+            $operator = $this->requestedOperator($query, $column);
+            if (null === $operator) {
                 continue;
             }
             if (! $this->adapters->get($column->source)->supports($column)) {
-                $this->rejectFilter($query, $column, __('This field configuration does not support scalar filtering.', 'noteware-admin-tables'));
+                $this->rejectFilter($query, $column, __('This field configuration does not support filtering.', 'noteware-admin-tables'));
                 continue;
             }
-            try {
-                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The typed validator must see the exact unslashed value and sanitizes text itself.
-                $value = ValueValidator::validate($column, wp_unslash($_GET[$parameter]));
-            } catch (InvalidArgumentException) {
-                $this->rejectFilter($query, $column);
+
+            if ('taxonomy' === $column->source) {
+                $clause = $this->taxonomyClause($query, $column, $operator);
+                if (null !== $clause) {
+                    $pluginTaxFilters[] = $clause;
+                }
                 continue;
             }
 
             if ('native' === $column->source) {
-                $this->applyNativeFilter($query, $column, $value);
+                $value = $this->exactValue($query, $column);
+                if (null !== $value) {
+                    $this->applyNativeFilter($query, $column, $value);
+                }
                 continue;
             }
+
             ++$metadataFilters;
-            if ($metadataFilters > 5) {
+            if ($metadataFilters > self::MAX_METADATA_FILTERS) {
                 $this->rejectFilter($query, $column, __('No more than five metadata filters may run together.', 'noteware-admin-tables'));
                 continue;
             }
-            $this->markExpensive($column);
-            if ('acf' === $column->source && 'date' === $column->type) {
-                $value = str_replace('-', '', $value);
+            $clause = $this->metadataClause($query, $column, $operator);
+            if (null !== $clause) {
+                $this->markExpensive($column);
+                $pluginMetaFilters[] = $clause;
             }
-            $pluginMetaFilters[] = array(
-                'key'     => $column->field,
-                'value'   => $value,
-                'compare' => '=',
-                'type'    => $this->metaType($column),
-            );
         }
 
         if ($pluginMetaFilters) {
-            $metaQuery = $existingMetaQuery
-                ? array('relation' => 'AND', $existingMetaQuery, array_merge(array('relation' => 'AND'), $pluginMetaFilters))
-                : $pluginMetaFilters;
-            $query->set('meta_query', $metaQuery);
+            $existing  = $query->get('meta_query');
+            $existing  = is_array($existing) ? $existing : array();
+            $additions = array_merge(array('relation' => 'AND'), $pluginMetaFilters);
+            $query->set('meta_query', $existing ? array('relation' => 'AND', $existing, $additions) : $pluginMetaFilters);
         }
+
+        if ($pluginTaxFilters) {
+            $existing  = $query->get('tax_query');
+            $existing  = is_array($existing) ? $existing : array();
+            $additions = array_merge(array('relation' => 'AND'), $pluginTaxFilters);
+            $query->set('tax_query', $existing ? array('relation' => 'AND', $existing, $additions) : $pluginTaxFilters);
+        }
+    }
+
+    /**
+     * Resolve the operator this request asks for, or null when no filter applies.
+     */
+    private function requestedOperator(\WP_Query $query, ColumnDefinition $column): ?string
+    {
+        $operatorParameter = 'nat_op_' . $column->key;
+        $operator          = $column->defaultOperator();
+
+        if (isset($_GET[$operatorParameter])) {
+            if (! is_string($_GET[$operatorParameter])) {
+                $this->rejectFilter($query, $column);
+                return null;
+            }
+            $requested = sanitize_key(wp_unslash($_GET[$operatorParameter]));
+            if ('' !== $requested) {
+                if (! $column->supportsOperator($requested)) {
+                    $this->rejectFilter($query, $column, __('That filter type is not available for this column.', 'noteware-admin-tables'));
+                    return null;
+                }
+                $operator = $requested;
+            }
+        }
+
+        if ('is' !== $operator) {
+            return $operator;
+        }
+
+        $parameter = 'nat_filter_' . $column->key;
+        if (! isset($_GET[$parameter])) {
+            return null;
+        }
+        if (! is_string($_GET[$parameter])) {
+            $this->rejectFilter($query, $column);
+            return null;
+        }
+        if ('' === $_GET[$parameter]) {
+            return null;
+        }
+        return 'is';
+    }
+
+    /**
+     * The validated exact filter value, or null when the request was rejected.
+     */
+    private function exactValue(\WP_Query $query, ColumnDefinition $column): ?string
+    {
+        $parameter = 'nat_filter_' . $column->key;
+        if (! isset($_GET[$parameter]) || ! is_string($_GET[$parameter])) {
+            $this->rejectFilter($query, $column);
+            return null;
+        }
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The typed validator must see the exact unslashed value and sanitizes text itself.
+        $raw     = wp_unslash($_GET[$parameter]);
+        $adapter = $this->adapters->get($column->source);
+        try {
+            if ($adapter instanceof FilterableFieldAdapter) {
+                return $adapter->validateFilterValue($column, is_string($raw) ? $raw : '');
+            }
+            return ValueValidator::validate($column, $raw);
+        } catch (InvalidArgumentException) {
+            $this->rejectFilter($query, $column);
+            return null;
+        }
+    }
+
+    /**
+     * @return array<array-key, mixed>|null
+     */
+    private function metadataClause(\WP_Query $query, ColumnDefinition $column, string $operator): ?array
+    {
+        if ('empty' === $operator) {
+            return array(
+                'relation' => 'OR',
+                array(
+                    'key'     => $column->field,
+                    'compare' => 'NOT EXISTS',
+                ),
+                array(
+                    'key'     => $column->field,
+                    'value'   => '',
+                    'compare' => '=',
+                ),
+            );
+        }
+        if ('not_empty' === $operator) {
+            return array(
+                'relation' => 'AND',
+                array(
+                    'key'     => $column->field,
+                    'compare' => 'EXISTS',
+                ),
+                array(
+                    'key'     => $column->field,
+                    'value'   => '',
+                    'compare' => '!=',
+                ),
+            );
+        }
+
+        $value = $this->exactValue($query, $column);
+        if (null === $value) {
+            return null;
+        }
+        if ('acf' === $column->source && 'date' === $column->type) {
+            $value = str_replace('-', '', $value);
+        }
+        return array(
+            'key'     => $column->field,
+            'value'   => $value,
+            'compare' => '=',
+            'type'    => $this->metaType($column),
+        );
+    }
+
+    /**
+     * @return array<array-key, mixed>|null
+     */
+    private function taxonomyClause(\WP_Query $query, ColumnDefinition $column, string $operator): ?array
+    {
+        if ('empty' === $operator) {
+            return array(
+                'taxonomy' => $column->field,
+                'operator' => 'NOT EXISTS',
+            );
+        }
+        if ('not_empty' === $operator) {
+            return array(
+                'taxonomy' => $column->field,
+                'operator' => 'EXISTS',
+            );
+        }
+
+        $value = $this->exactValue($query, $column);
+        if (null === $value) {
+            return null;
+        }
+        return array(
+            'taxonomy'         => $column->field,
+            'field'            => 'slug',
+            'terms'            => array($value),
+            'operator'         => 'IN',
+            'include_children' => false,
+        );
     }
 
     private function applySort(\WP_Query $query, ColumnDefinition $column): void
     {
         if ('native' === $column->source) {
-            $allowed = array('id' => 'ID', 'title' => 'title', 'author' => 'author', 'date' => 'date', 'status' => 'post_status');
+            $allowed = array('id' => 'ID', 'title' => 'title', 'slug' => 'name', 'author' => 'author', 'date' => 'date');
             if (isset($allowed[$column->field])) {
                 $query->set('orderby', $allowed[$column->field]);
             }
@@ -133,8 +282,8 @@ final class QueryController
         $metaQuery  = $query->get('meta_query');
         $metaQuery  = is_array($metaQuery) ? $metaQuery : array();
         $sortPresence = array(
-            'relation'                    => 'OR',
-            $sortClause                   => array(
+            'relation'                   => 'OR',
+            $sortClause                  => array(
                 'key'     => $column->field,
                 'compare' => 'EXISTS',
                 'type'    => $this->metaType($column),

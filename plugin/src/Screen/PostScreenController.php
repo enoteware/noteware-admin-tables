@@ -9,8 +9,13 @@ declare(strict_types=1);
 
 namespace Noteware\AdminTables\Screen;
 
+use Throwable;
 use Noteware\AdminTables\Adapter\AdapterRegistry;
+use Noteware\AdminTables\Audit\AuditRepository;
 use Noteware\AdminTables\Config\Configuration;
+use Noteware\AdminTables\Contract\EditableFieldAdapter;
+use Noteware\AdminTables\Model\ColumnDefinition;
+use Noteware\AdminTables\Model\ScreenDefinition;
 
 final class PostScreenController
 {
@@ -18,7 +23,8 @@ final class PostScreenController
 
     public function __construct(
         private readonly Configuration $configuration,
-        private readonly AdapterRegistry $adapters
+        private readonly AdapterRegistry $adapters,
+        private readonly ?AuditRepository $audit = null
     ) {
         $this->renderer = new ColumnRenderer();
     }
@@ -27,7 +33,9 @@ final class PostScreenController
     {
         add_action('current_screen', array($this, 'registerScreen'));
         add_action('restrict_manage_posts', array($this, 'renderFilters'));
+        add_action('manage_posts_extra_tablenav', array($this, 'renderBulkEditor'));
         add_action('admin_enqueue_scripts', array($this, 'enqueueAssets'));
+        add_action('admin_head', array($this, 'renderColumnWidths'));
         add_filter('the_posts', array($this, 'preloadPosts'), 10, 2);
     }
 
@@ -48,11 +56,71 @@ final class PostScreenController
      */
     public function columns(array $columns): array
     {
-        $postType = $this->currentPostType();
-        foreach ($this->configuration->columns($postType) as $column) {
-            $columns['nat_' . $column->key] = $column->label;
+        $screen = $this->configuration->screen($this->currentPostType());
+        if (! $screen) {
+            return $columns;
         }
-        return $columns;
+
+        $hidden   = array_merge($screen->remove, $screen->replacedColumns());
+        $replaces = array();
+        $appended = array();
+        foreach ($screen->columns as $column) {
+            if (null !== $column->replaces) {
+                $replaces[$column->replaces][] = $column;
+                continue;
+            }
+            $appended[ScreenDefinition::COLUMN_PREFIX . $column->key] = $column->label;
+        }
+
+        $result = array();
+        foreach ($columns as $id => $label) {
+            if (isset($replaces[$id])) {
+                foreach ($replaces[$id] as $column) {
+                    $result[ScreenDefinition::COLUMN_PREFIX . $column->key] = $column->label;
+                }
+                continue;
+            }
+            if (in_array($id, $hidden, true)) {
+                continue;
+            }
+            $result[$id] = $label;
+        }
+
+        // A replacement for a built-in column that this screen does not show still
+        // has to appear, otherwise the configured column would silently vanish.
+        foreach ($replaces as $builtIn => $replacements) {
+            if (array_key_exists($builtIn, $columns)) {
+                continue;
+            }
+            foreach ($replacements as $column) {
+                $result[ScreenDefinition::COLUMN_PREFIX . $column->key] = $column->label;
+            }
+        }
+
+        $result = array_merge($result, $appended);
+
+        return $screen->order ? $this->applyOrder($result, $screen->order) : $result;
+    }
+
+    /**
+     * @param  array<string, string> $columns Resolved columns.
+     * @param  list<string>          $order   Configured order.
+     * @return array<string, string>
+     */
+    private function applyOrder(array $columns, array $order): array
+    {
+        $ordered = array();
+        foreach ($order as $id) {
+            if (array_key_exists($id, $columns)) {
+                $ordered[$id] = $columns[$id];
+            }
+        }
+        foreach ($columns as $id => $label) {
+            if (! array_key_exists($id, $ordered)) {
+                $ordered[$id] = $label;
+            }
+        }
+        return $ordered;
     }
 
     /**
@@ -63,7 +131,7 @@ final class PostScreenController
     {
         foreach ($this->configuration->columns($this->currentPostType()) as $column) {
             if ($column->sortable && $this->adapters->get($column->source)->supports($column)) {
-                $columns['nat_' . $column->key] = 'nat_' . $column->key;
+                $columns[ScreenDefinition::COLUMN_PREFIX . $column->key] = ScreenDefinition::COLUMN_PREFIX . $column->key;
             }
         }
         return $columns;
@@ -71,25 +139,42 @@ final class PostScreenController
 
     public function cell(string $columnName, int $postId): void
     {
-        if (! str_starts_with($columnName, 'nat_')) {
+        if (! str_starts_with($columnName, ScreenDefinition::COLUMN_PREFIX)) {
             return;
         }
         $postType = get_post_type($postId);
         if (! is_string($postType)) {
             return;
         }
-        $column = $this->configuration->column($postType, substr($columnName, 4));
+        $column = $this->configuration->column($postType, substr($columnName, strlen(ScreenDefinition::COLUMN_PREFIX)));
         if (! $column) {
             return;
         }
-        $stored = $this->adapters->get($column->source)->read($postId, $column);
+        $adapter = $this->adapters->get($column->source);
+        $stored  = $adapter->read($postId, $column);
+
+        $editor = '';
+        if ($column->editable && $adapter instanceof EditableFieldAdapter && $this->mayEdit($adapter, $postId, $column)) {
+            $editor = $this->renderer->editor(
+                $postId,
+                $column,
+                $stored,
+                $this->choicesFor($column),
+                $adapter->supportsRemoval($column)
+            );
+            $auditId = $this->audit?->undoableId($postId, $column->key);
+            if (null !== $auditId) {
+                $editor .= $this->renderer->undoButton($auditId, wp_create_nonce($adapter->nonceAction('undo', $auditId, $column)));
+            }
+        }
+
         echo '<div class="nat-cell" data-column="' . esc_attr($column->key) . '"><span class="nat-value">';
-        echo wp_kses_post($this->renderer->value($column, $stored));
-        echo '</span>' . wp_kses($this->renderer->editor($postId, $column, $stored), $this->editorAllowedHtml()) . '</div>';
+        echo wp_kses($this->renderer->value($column, $stored), $this->valueAllowedHtml());
+        echo '</span>' . wp_kses($editor, $this->editorAllowedHtml()) . '</div>';
     }
 
     /**
-     * Prime the page-scoped value and attachment caches before cell rendering.
+     * Prime the page-scoped value, term, and attachment caches before cell rendering.
      *
      * @param  list<\WP_Post> $posts Main query posts.
      * @return list<\WP_Post>
@@ -119,23 +204,37 @@ final class PostScreenController
             return;
         }
         update_meta_cache('post', $postIds);
+        $this->audit?->preloadUndoable($postIds, get_current_user_id());
 
         $postType = get_post_type($postIds[0]);
         if (! is_string($postType)) {
             return;
         }
+
+        $taxonomies    = array();
         $attachmentIds = array();
         foreach ($this->configuration->columns($postType) as $column) {
-            if ('image' !== $column->type || 'native' === $column->source) {
+            if ('taxonomy' === $column->source) {
+                $taxonomies[$column->field] = $column->field;
+                continue;
+            }
+            if ('image' !== $column->type) {
                 continue;
             }
             foreach ($postIds as $postId) {
-                $attachmentId = (int) get_post_meta($postId, $column->field, true);
+                $attachmentId = 'native' === $column->source
+                    ? (int) get_post_meta($postId, '_thumbnail_id', true)
+                    : (int) get_post_meta($postId, $column->field, true);
                 if ($attachmentId > 0) {
                     $attachmentIds[$attachmentId] = $attachmentId;
                 }
             }
         }
+
+        if ($taxonomies) {
+            update_object_term_cache($postIds, $postType);
+        }
+
         if ($attachmentIds) {
             get_posts(
                 array(
@@ -158,20 +257,103 @@ final class PostScreenController
                 continue;
             }
             $name     = 'nat_filter_' . $column->key;
-            $selected = $this->selectedFilterValue($name);
+            $operator = 'nat_op_' . $column->key;
+            $selected = $this->requestValue($name);
+
+            if (count($column->operators) > 1) {
+                echo '<label class="screen-reader-text" for="' . esc_attr($operator) . '">' . esc_html(sprintf(__('%s filter type', 'noteware-admin-tables'), $column->label)) . '</label>';
+                echo '<select id="' . esc_attr($operator) . '" name="' . esc_attr($operator) . '" class="nat-filter-operator">';
+                foreach ($column->operators as $available) {
+                    echo '<option value="' . esc_attr($available) . '"' . selected($this->requestValue($operator), $available, false) . '>' . esc_html($this->operatorLabel($available)) . '</option>';
+                }
+                echo '</select>';
+            }
+
             echo '<label class="screen-reader-text" for="' . esc_attr($name) . '">' . esc_html(sprintf(__('Filter by %s', 'noteware-admin-tables'), $column->label)) . '</label>';
-            if (in_array($column->type, array('boolean', 'select'), true)) {
-                $choices = 'boolean' === $column->type ? array('1' => __('Yes', 'noteware-admin-tables'), '0' => __('No', 'noteware-admin-tables')) : $column->choices;
+            $choices = $this->choicesFor($column);
+            if ($choices) {
                 echo '<select id="' . esc_attr($name) . '" name="' . esc_attr($name) . '"><option value="">' . esc_html(sprintf(__('All %s', 'noteware-admin-tables'), $column->label)) . '</option>';
                 foreach ($choices as $value => $label) {
                     echo '<option value="' . esc_attr((string) $value) . '"' . selected($selected, (string) $value, false) . '>' . esc_html($label) . '</option>';
                 }
                 echo '</select>';
             } else {
-                $type = 'number' === $column->type ? 'number' : ('date' === $column->type ? 'date' : 'search');
+                $type = match ($column->type) {
+                    'number' => 'number',
+                    'date'   => 'date',
+                    'url'    => 'search',
+                    default  => 'search',
+                };
                 echo '<input id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" type="' . esc_attr($type) . '" value="' . esc_attr($selected) . '" placeholder="' . esc_attr($column->label) . '">';
             }
         }
+    }
+
+    public function renderBulkEditor(string $which): void
+    {
+        if ('top' !== $which) {
+            return;
+        }
+        $postType = $this->currentPostType();
+        $columns  = array();
+        foreach ($this->configuration->columns($postType) as $column) {
+            $adapter = $this->adapters->get($column->source);
+            if (! $column->bulkEditable || ! $adapter instanceof EditableFieldAdapter || ! $adapter->supports($column)) {
+                continue;
+            }
+            $columns[] = $column;
+        }
+        $postTypeObject = get_post_type_object($postType);
+        $capability     = is_object($postTypeObject) ? (string) $postTypeObject->cap->edit_posts : 'edit_posts';
+        if (! $columns || ! current_user_can($capability)) {
+            return;
+        }
+
+        echo '<div class="nat-bulk alignleft actions">';
+        echo '<button type="button" class="button nat-bulk-toggle" aria-expanded="false" aria-controls="nat-bulk-panel">' . esc_html__('Bulk edit fields', 'noteware-admin-tables') . '</button>';
+        echo '<div id="nat-bulk-panel" class="nat-bulk-panel" hidden>';
+        echo '<label class="screen-reader-text" for="nat-bulk-column">' . esc_html__('Field to change', 'noteware-admin-tables') . '</label>';
+        echo '<select id="nat-bulk-column" class="nat-bulk-column">';
+        foreach ($columns as $column) {
+            echo '<option value="' . esc_attr($column->key) . '">' . esc_html($column->label) . '</option>';
+        }
+        echo '</select>';
+        foreach ($columns as $column) {
+            echo '<div class="nat-bulk-control" data-column="' . esc_attr($column->key) . '" hidden>';
+            echo '<label class="screen-reader-text" for="' . esc_attr('nat-bulk-value-' . $column->key) . '">' . esc_html(sprintf(__('New %s', 'noteware-admin-tables'), $column->label)) . '</label>';
+            echo wp_kses($this->renderer->bulkControl($column, $this->choicesFor($column)), $this->editorAllowedHtml());
+            echo '</div>';
+        }
+        echo '<input type="hidden" id="nat-bulk-nonce" value="' . esc_attr(wp_create_nonce('nat_bulk_edit_' . $postType)) . '">';
+        echo '<input type="hidden" id="nat-bulk-post-type" value="' . esc_attr($postType) . '">';
+        // The panel lives inside the WordPress filter form, so nothing here is named.
+        echo '<button type="button" class="button button-primary nat-bulk-apply">' . esc_html__('Apply to selected', 'noteware-admin-tables') . '</button>';
+        echo '<div class="nat-bulk-status" role="status" aria-live="polite"></div>';
+        echo '</div></div>';
+    }
+
+    public function renderColumnWidths(): void
+    {
+        $screen = get_current_screen();
+        if (! $screen || 'edit' !== $screen->base || ! is_string($screen->post_type)) {
+            return;
+        }
+        $rules = '';
+        foreach ($this->configuration->columns($screen->post_type) as $column) {
+            if (null === $column->width) {
+                continue;
+            }
+            $rules .= sprintf(
+                '.wp-list-table .column-%1$s{width:%2$s;}',
+                ScreenDefinition::COLUMN_PREFIX . $column->key,
+                $column->width
+            );
+        }
+        if ('' === $rules) {
+            return;
+        }
+        // Both the column key and the width are validated against strict patterns.
+        echo '<style id="noteware-admin-tables-widths">' . esc_html($rules) . '</style>';
     }
 
     public function enqueueAssets(string $hook): void
@@ -181,10 +363,66 @@ final class PostScreenController
         }
         wp_enqueue_style('noteware-admin-tables', plugins_url('assets/admin.css', NAT_PLUGIN_FILE), array(), NAT_VERSION);
         wp_enqueue_script('noteware-admin-tables', plugins_url('assets/admin.js', NAT_PLUGIN_FILE), array(), NAT_VERSION, true);
-        wp_localize_script('noteware-admin-tables', 'natAdminTables', array('ajaxUrl' => admin_url('admin-ajax.php')));
+        wp_localize_script(
+            'noteware-admin-tables',
+            'natAdminTables',
+            array(
+                'ajaxUrl'          => admin_url('admin-ajax.php'),
+                'noSelectionLabel' => __('Select at least one record first.', 'noteware-admin-tables'),
+                'workingLabel'     => __('Working.', 'noteware-admin-tables'),
+                'undoAllLabel'     => __('Undo these changes', 'noteware-admin-tables'),
+            )
+        );
     }
 
-    private function selectedFilterValue(string $name): string
+    /**
+     * @return array<array-key, string>
+     */
+    private function choicesFor(ColumnDefinition $column): array
+    {
+        if ('boolean' === $column->type) {
+            return array('1' => __('Yes', 'noteware-admin-tables'), '0' => __('No', 'noteware-admin-tables'));
+        }
+        if ('select' !== $column->type) {
+            return array();
+        }
+
+        $adapter = $this->adapters->get($column->source);
+        $live    = array();
+        if ($adapter instanceof \Noteware\AdminTables\Contract\FilterableFieldAdapter) {
+            $live = $adapter->filterChoices($column);
+        } elseif ($adapter instanceof \Noteware\AdminTables\Adapter\AcfAdapter) {
+            $live = $adapter->choices($column);
+        }
+        if (! $live) {
+            return $column->choices;
+        }
+        if (! $column->choices) {
+            return $live;
+        }
+        return array_intersect_key($live, $column->choices);
+    }
+
+    private function mayEdit(EditableFieldAdapter $adapter, int $postId, ColumnDefinition $column): bool
+    {
+        try {
+            $adapter->authorize($postId, $column);
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function operatorLabel(string $operator): string
+    {
+        return match ($operator) {
+            'empty'     => __('Is empty', 'noteware-admin-tables'),
+            'not_empty' => __('Has a value', 'noteware-admin-tables'),
+            default     => __('Is exactly', 'noteware-admin-tables'),
+        };
+    }
+
+    private function requestValue(string $name): string
     {
         if (! isset($_GET[$name]) || ! is_string($_GET[$name])) {
             return '';
@@ -203,14 +441,44 @@ final class PostScreenController
     /**
      * @return array<string, array<string, bool>>
      */
+    private function valueAllowedHtml(): array
+    {
+        return array(
+            'span' => array('class' => true),
+            'a'    => array(
+                'class'  => true,
+                'href'   => true,
+                'rel'    => true,
+                'target' => true,
+            ),
+            'img'  => array(
+                'class'    => true,
+                'src'      => true,
+                'srcset'   => true,
+                'sizes'    => true,
+                'alt'      => true,
+                'width'    => true,
+                'height'   => true,
+                'loading'  => true,
+                'decoding' => true,
+                'style'    => true,
+            ),
+        );
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
     private function editorAllowedHtml(): array
     {
         return array(
             'button' => array(
-                'type'          => true,
-                'class'         => true,
-                'aria-expanded' => true,
-                'aria-controls' => true,
+                'type'           => true,
+                'class'          => true,
+                'aria-expanded'  => true,
+                'aria-controls'  => true,
+                'data-audit-id'  => true,
+                'data-nonce'     => true,
             ),
             'div'    => array(
                 'id'     => true,
@@ -222,15 +490,18 @@ final class PostScreenController
                 'for'   => true,
             ),
             'input'  => array(
-                'id'    => true,
-                'name'  => true,
-                'type'  => true,
-                'value' => true,
-                'step'  => true,
+                'id'          => true,
+                'data-field'  => true,
+                'type'        => true,
+                'value'       => true,
+                'step'        => true,
+                'min'         => true,
+                'inputmode'   => true,
+                'placeholder' => true,
             ),
             'select' => array(
-                'id'   => true,
-                'name' => true,
+                'id'         => true,
+                'data-field' => true,
             ),
             'option' => array(
                 'value'    => true,
