@@ -443,6 +443,8 @@ $screen_controller->renderColumnWidths();
 $width_markup = (string) ob_get_clean();
 $assert(str_contains($width_markup, '.column-nat_nat_demo_link{width:18%;}'), 'Configured widths must render as scoped CSS.');
 $assert(str_contains($width_markup, '.column-nat_nat_demo_thumb{width:90px;}'), 'Pixel widths must render as scoped CSS.');
+$assert(str_contains($width_markup, '.wp-list-table{min-width:1800px;}'), 'A configured screen minimum width must render as scoped CSS.');
+$assert(str_contains($width_markup, '#posts-filter{overflow-x:auto;max-width:100%;}'), 'A screen with a minimum width must scroll sideways inside the page instead of widening it.');
 
 // --- Filter operators --------------------------------------------------------
 

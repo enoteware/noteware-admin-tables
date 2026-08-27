@@ -77,6 +77,56 @@ final class ScreenDefinitionTest extends TestCase
         new ScreenDefinition(array($this->column('apply', null)), array('Title Column'));
     }
 
+    public function test_percentage_widths_must_leave_room_for_built_in_columns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new ScreenDefinition(
+            array(
+                $this->wideColumn('one', '40%'),
+                $this->wideColumn('two', '40%'),
+            )
+        );
+    }
+
+    public function test_percentage_widths_within_the_budget_are_accepted(): void
+    {
+        $screen = new ScreenDefinition(
+            array(
+                $this->wideColumn('one', '40%'),
+                $this->wideColumn('two', '30%'),
+                $this->wideColumn('three', '400px'),
+            )
+        );
+
+        self::assertCount(3, $screen->columns);
+    }
+
+    public function test_a_screen_minimum_width_must_be_a_bounded_pixel_length(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new ScreenDefinition(array($this->column('apply', null)), array(), array(), '80%');
+    }
+
+    public function test_a_valid_screen_minimum_width_is_kept(): void
+    {
+        $screen = new ScreenDefinition(array($this->column('apply', null)), array(), array(), '2200px');
+        self::assertSame('2200px', $screen->minWidth);
+    }
+
+    private function wideColumn(string $key, string $width): ColumnDefinition
+    {
+        return ColumnDefinition::fromArray(
+            array(
+                'key'    => $key,
+                'label'  => ucfirst($key),
+                'source' => 'meta',
+                'type'   => 'text',
+                'field'  => $key,
+                'width'  => $width,
+            )
+        );
+    }
+
     private function column(string $key, ?string $replaces): ColumnDefinition
     {
         return ColumnDefinition::fromArray(

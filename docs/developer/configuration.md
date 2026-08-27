@@ -73,10 +73,15 @@ A screen may also declare `order` and `remove`.
 ```php
 $configuration['sample_record'] = array(
     'columns' => array( /* ... */ ),
-    'order'   => array( 'cb', 'title', 'nat_reference_score' ),
-    'remove'  => array( 'author' ),
+    'order'     => array( 'cb', 'title', 'nat_reference_score' ),
+    'remove'    => array( 'author' ),
+    'min_width' => '1800px',
 );
 ```
+
+A screen may also declare `min_width`, a pixel length such as `2200px`. A list screen with many columns otherwise squeezes every column until its text wraps one character per line, including the WordPress title column. With `min_width` the table keeps its columns readable and the screen scrolls sideways instead.
+
+Percentage column widths must together claim no more than 75 percent of the table. WordPress still renders its own checkbox and title columns, and a configuration that claims everything starves them.
 
 `order` lists final WordPress column ids in the order they should appear. A plugin column appears as `nat_` plus its configured key. Any column the list does not name keeps its existing relative position after the ordered ones, so a later WordPress release cannot silently drop a column. `remove` hides built-in WordPress columns. The bulk action checkbox column cannot be removed, and a plugin column is removed by leaving it out of `columns` rather than by naming it here.
 

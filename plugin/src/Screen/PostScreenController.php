@@ -338,8 +338,21 @@ final class PostScreenController
         if (! $screen || 'edit' !== $screen->base || ! is_string($screen->post_type)) {
             return;
         }
+        $definition = $this->configuration->screen($screen->post_type);
+        if (! $definition) {
+            return;
+        }
+
         $rules = '';
-        foreach ($this->configuration->columns($screen->post_type) as $column) {
+        if (null !== $definition->minWidth) {
+            // A screen with many columns scrolls sideways instead of squeezing
+            // every column until its text wraps one character per line.
+            $rules .= sprintf(
+                '#posts-filter{overflow-x:auto;max-width:100%%;}.wp-list-table{min-width:%s;}',
+                $definition->minWidth
+            );
+        }
+        foreach ($definition->columns as $column) {
             if (null === $column->width) {
                 continue;
             }

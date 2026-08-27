@@ -56,6 +56,17 @@ test.describe('parity surface', () => {
 			page.locator('.nat-cell[data-column="nat_demo_topic"]').first()
 		).toContainText(/Topic|Not set/);
 
+		// A narrow configured column must not squeeze a control below the
+		// minimum accessible target size.
+		const narrowEdit = page
+			.locator('.nat-cell[data-column="nat_demo_thumb"] .nat-edit-button')
+			.first();
+		await expect(narrowEdit).toBeVisible();
+		const box = await narrowEdit.boundingBox();
+		expect(box.width).toBeGreaterThanOrEqual(24);
+		expect(box.height).toBeGreaterThanOrEqual(24);
+		expect(box.height).toBeLessThan(120);
+
 		await page.screenshot({
 			path: 'tests/artifacts/parity-default-layout.png',
 			fullPage: true,

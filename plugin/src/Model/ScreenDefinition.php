@@ -19,16 +19,23 @@ final class ScreenDefinition
 
     private const MAX_REMOVED = 50;
 
+    private const MAX_CLAIMED_PERCENT = 75.0;
+
     /**
-     * @param list<ColumnDefinition> $columns Configured plugin columns.
-     * @param list<string>           $order   Final WordPress column ids, in order.
-     * @param list<string>           $remove  Built-in WordPress column ids to hide.
+     * @param list<ColumnDefinition> $columns  Configured plugin columns.
+     * @param list<string>           $order    Final WordPress column ids, in order.
+     * @param list<string>           $remove   Built-in WordPress column ids to hide.
+     * @param string|null            $minWidth Least table width before the screen scrolls sideways.
      */
     public function __construct(
         public readonly array $columns,
         public readonly array $order = array(),
-        public readonly array $remove = array()
+        public readonly array $remove = array(),
+        public readonly ?string $minWidth = null
     ) {
+        if (null !== $minWidth && ! preg_match('/^[1-9][0-9]{2,4}px$/', $minWidth)) {
+            throw new InvalidArgumentException('A screen minimum width must be a pixel length between 100px and 99999px.');
+        }
         $keys = array();
         foreach ($this->columns as $column) {
             if (isset($keys[$column->key])) {
@@ -62,6 +69,8 @@ final class ScreenDefinition
                 throw new InvalidArgumentException('A replaced built-in column is already removed by the replacement.');
             }
         }
+
+        $this->assertWidthsFit();
     }
 
     /**
@@ -105,6 +114,28 @@ final class ScreenDefinition
         }
         if (! $this->validIds($ids)) {
             throw new InvalidArgumentException('The column removal list contains an invalid column id.');
+        }
+    }
+
+    /**
+     * Percentage widths cannot claim more than the table has.
+     *
+     * WordPress still shows its own checkbox and title columns, so a screen
+     * that claims every percent squeezes those to nothing and wraps their text
+     * one character per line. Leaving a quarter of the table free keeps them
+     * readable.
+     */
+    private function assertWidthsFit(): void
+    {
+        $claimed = 0.0;
+        foreach ($this->columns as $column) {
+            if (null === $column->width || ! str_ends_with($column->width, '%')) {
+                continue;
+            }
+            $claimed += (float) rtrim($column->width, '%');
+        }
+        if ($claimed > self::MAX_CLAIMED_PERCENT) {
+            throw new InvalidArgumentException('Configured percentage column widths must leave at least a quarter of the table for the built-in WordPress columns.');
         }
     }
 

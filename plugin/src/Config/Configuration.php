@@ -56,7 +56,7 @@ final class Configuration
         /**
          * Supplies site-owned post list-screen configuration.
          *
-         * @param array<string, array{columns?: list<array<string, mixed>>, order?: list<string>, remove?: list<string>}> $configuration Configuration by post type.
+         * @param array<string, array{columns?: list<array<string, mixed>>, order?: list<string>, remove?: list<string>, min_width?: string}> $configuration Configuration by post type.
          */
         $raw = apply_filters('noteware_admin_tables_config', array());
         if (! is_array($raw)) {
@@ -71,7 +71,7 @@ final class Configuration
             if (! is_string($postType) || ! post_type_exists($postType) || ! is_array($screen)) {
                 throw new InvalidArgumentException('Each configured screen must name an existing post type.');
             }
-            if (array_diff(array_keys($screen), array('columns', 'order', 'remove'))) {
+            if (array_diff(array_keys($screen), array('columns', 'order', 'remove', 'min_width'))) {
                 throw new InvalidArgumentException('Screen configuration contains an unknown option.');
             }
             $postTypeObject = get_post_type_object($postType);
@@ -93,10 +93,22 @@ final class Configuration
             $this->screens[$postType] = new ScreenDefinition(
                 $columns,
                 $this->idList($screen['order'] ?? array()),
-                $this->idList($screen['remove'] ?? array())
+                $this->idList($screen['remove'] ?? array()),
+                $this->minWidth($screen['min_width'] ?? null)
             );
         }
         return $this->screens;
+    }
+
+    private function minWidth(mixed $value): ?string
+    {
+        if (null === $value) {
+            return null;
+        }
+        if (! is_string($value)) {
+            throw new InvalidArgumentException('A screen minimum width must be a string.');
+        }
+        return $value;
     }
 
     /**

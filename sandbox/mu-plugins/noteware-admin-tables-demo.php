@@ -236,7 +236,8 @@ add_filter(
                     'choices'    => array(),
                 ),
             ),
-            'remove'  => array('author'),
+            'remove'    => array('author'),
+            'min_width' => '1800px',
             'order'   => array(
                 'cb',
                 'title',

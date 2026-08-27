@@ -4,6 +4,12 @@
     max-width: 100%;
 }
 
+/* A control that cannot shrink further stays reachable instead of being clipped. */
+.wp-list-table .column-primary .nat-cell,
+.wp-list-table td .nat-cell {
+    overflow-x: auto;
+}
+
 .nat-thumbnail {
     width: 48px;
     height: 48px;
@@ -22,8 +28,12 @@
     justify-content: center;
     min-width: 32px;
     min-height: 32px;
-    padding: 2px 4px;
+    padding: 2px 6px;
     margin-top: 0.25rem;
+    /* A narrow configured column must not wrap the label one character per
+       line, which would squeeze the control below the minimum target size. */
+    white-space: nowrap;
+    flex: none;
 }
 
 .nat-inline-editor {

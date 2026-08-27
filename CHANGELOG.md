@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 - Bulk editing with per-record capability checks, per-record transactions, per-record audit rows, precise partial-failure reporting, and per-record undo.
 - Site-owned column order, replacement of selected built-in columns, and bounded column widths.
 - An undo control that survives a page reload, backed by a bounded page-scoped audit query.
+- A screen minimum width so a list with many columns scrolls sideways instead of squeezing every column until its text wraps one character per line.
 
 ### Changed
 
@@ -25,6 +26,8 @@ All notable changes to this project are documented in this file.
 - The dependency license report failed when an optional peer dependency listed in the lockfile was not installed. It now reports only what npm installed and prints how many entries it skipped.
 - A list screen with several editable columns could produce a filter request that the web server rejected as too long.
 - Plugin cells could overflow their table cell and cover a neighbouring column on a screen with many columns.
+- A narrow configured column wrapped an edit control one character per line, which shrank it below the minimum accessible target size.
+- Percentage column widths that claimed the whole table are now rejected instead of starving the WordPress checkbox and title columns.
 
 ## [0.1.0.0] - 2026-08-25
 
