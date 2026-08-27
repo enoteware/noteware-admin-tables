@@ -2,31 +2,34 @@
 
 ## State
 
-The first review milestone is implemented on `feat/first-review-milestone`.
+Two branches are open for review.
 
-The plugin now provides external post-screen configuration, native and metadata columns, six ACF display types, typed sorting and filtering, allowlisted scalar editing, immutable audit snapshots, and conditional undo. Generic site configuration and fixture data stay in the sandbox layer outside the distributable plugin.
+1. `feat/first-review-milestone` carries the first review milestone and remains open as pull request 1.
+2. `feat/acf-and-cfmtg-parity` builds on it and adds the parity work described below.
+
+The parity branch adds writable ACF text, link, and select fields, a taxonomy adapter, native title, slug, and featured-image editing, computed permalink display, filter operators for exact, empty, and has-a-value matching, bulk editing with per-record audit boundaries, site-owned column order, built-in column replacement, bounded column widths, and an undo control that survives a page reload. Site configuration and fixture data stay in the sandbox layer outside the distributable plugin.
 
 ## Local proof
 
 - Composer validation, PHP syntax, PHPCS, PHPStan, and PHPUnit pass.
-- PHPUnit has 41 tests and 79 assertions.
-- WordPress integration checks exercise edit and undo success, nonces, object and field capabilities, allowlists, raw typed-input rejection, invalid input, stale snapshots, repeated undo, audit creation, transaction rollback, literal backslash preservation, duplicate-row rejection, sparse and core-grouped metadata sorting, exact decimal comparison, preservation of pre-existing query relations, exact-screen cache preload, the dynamic Pages column hook, native fail-closed filters, exact percent-bearing choice keys, reserved empty filter values, ACF field-key mismatches, live and stale ACF select labels, hostile-label escaping, oversized maps, oversized choice entries, unsupported ACF select shapes and query controls, image-filter rejection, warning escaping, and the metadata-filter cost cap.
-- JavaScript lint and seven Jest assertions pass, including dependency-license shape normalization.
-- Playwright has six passing tests for display, exact sort and filter behavior, keyboard focus, edit, undo, invalid nonce, invalid-filter fail-closed behavior, and scoped WCAG checks in open, error, and OS-dark-preference states.
-- The 10,000-record profile renders 160 cells for 20 rows and 800 cells for 100 rows. Both runs use eight total queries, including four preload and render queries. Query growth is zero.
-- The latest local HTTP samples have a 0.099 second median and a 0.104 second maximum against a 5-second budget.
-- Composer and full npm tooling dependency audits pass. The license report covers 904 dependencies with zero blocked and zero missing declarations.
+- PHPUnit has 71 tests and 119 assertions.
+- WordPress integration checks cover the previous milestone plus ACF link display, editing, removal, explicit empty storage, ACF reference-row preservation, exact undo restoration, rejection of unsafe and malformed links, stale link snapshots, ACF select writes bounded by the live field and the configured allowlist, taxonomy display, single-term editing, clearing, full multiple-term undo, native title, slug, and featured-image editing, read-only permalinks, configured column order, built-in column removal and replacement, scoped column widths, the empty and has-a-value operators for metadata and taxonomy columns, fail-closed handling of an operator a column did not enable, editor and bulk-panel markup with no submittable field names, and every bulk editing success and failure boundary.
+- JavaScript lint and Jest pass.
+- Playwright has 10 passing tests, including the configured layout, a link edit followed by reload, undo, and a second reload, the empty and has-a-value filters, a bulk edit and group undo, keyboard focus, invalid nonce handling, and scoped WCAG checks in open, error, and OS-dark-preference states.
+- The 10,000-record profile renders 280 cells for 20 rows and 1,400 cells for 100 rows across 14 configured columns. Total queries are 13 and 12. Query growth is zero.
+- The latest local HTTP samples have a 0.283 second median and a 0.404 second maximum against a 5-second budget.
+- Composer and npm dependency audits pass. The license report covers 792 installed dependencies with zero blocked and zero missing declarations, and names the 112 lockfile entries npm did not install.
 - The full-worktree clean-room, secret-shape, and user-facing punctuation scan passes.
-- Browser screenshots are generated under `tests/artifacts/` and ignored from git. CI uploads browser evidence as an artifact.
-- An independent security and architecture review found no blockers after verifying fail-closed serializable locking, compare-and-swap writes, rollback cache invalidation, permission coverage, and query cost limits.
 
-## Pull request
+## Notable fixes in this branch
 
-The public pull request is open:
+- Inline editor and bulk panel fields now use `data-field` instead of `name`. Named fields were serialized into the WordPress list filter form, so a screen with several editable columns produced a request the web server rejected as too long.
+- Plugin cells no longer force a minimum width that could overflow the table cell and cover a neighbouring column.
+- An undo now records that it is an undo, so it is never offered back as a redo.
 
-https://github.com/enoteware/noteware-admin-tables/pull/1
+## Pull requests
 
-GitHub is the live source for the current head SHA, CI results, and automated-review status. The branch remains unmerged.
+GitHub is the live source for the current head SHA, CI results, and automated-review status. Both branches remain unmerged.
 
 ## Next action
 

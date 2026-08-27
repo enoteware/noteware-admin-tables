@@ -47,6 +47,15 @@ Integration tests cover:
 - valid and invalid request-specific nonces;
 - unknown and read-only column denial;
 - typed validator rejection and audit-table installation;
+- ACF link display, editing, removal, explicit empty storage, reference-row preservation, and exact undo restoration;
+- rejection of unsafe, relative, oversized, and whitespace-bearing links;
+- ACF select writes bounded by both the live field choices and the configured allowlist;
+- taxonomy display, single-term editing, clearing, and full multiple-term undo restoration;
+- native title, slug, and featured-image editing, including WordPress slug uniquing and read-only permalinks;
+- configured column order, built-in column removal, built-in column replacement, and scoped column widths;
+- the `is`, `empty`, and `not_empty` filter operators for metadata and taxonomy columns, including fail-closed handling of an operator a column did not enable;
+- editor and bulk-panel markup carrying no submittable field names;
+- bulk editing success, precise partial failure, per-record audit rows, and every bulk boundary;
 - browser sorting, filtering, editing, undo, error, focus, and scoped WCAG behavior; and
 - a stable query count as the displayed row count grows.
 
@@ -77,5 +86,10 @@ The browser proof must show:
 7. Error text is clear for a rejected edit.
 8. Keyboard focus and status messages work.
 9. The default WordPress admin color scheme has readable contrast. If a site adds a dark admin scheme, test that scheme separately.
+10. A link cell renders as a guarded external link, an empty link renders as empty, and an absent link renders with the configured empty label.
+11. A controlled edit survives a reload, the undo control is still offered after that reload, and a second reload shows the exact original value restored.
+12. A bulk edit reports its counts, updates the selected cells, and can be undone as a group.
+
+The browser suite records screenshots for each of those states under `tests/artifacts/`. Those files are ignored by git and uploaded by CI as build evidence.
 
 Record the current branch commit and the exact check output in the pull request. Automated review must cover the current head commit.

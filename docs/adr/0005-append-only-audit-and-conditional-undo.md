@@ -42,3 +42,11 @@ The parent post and editable metadata row or insertion gap are locked inside a s
 - [WordPress AJAX action reference](https://developer.wordpress.org/reference/hooks/wp_ajax_action/)
 - [WordPress `dbDelta()` reference](https://developer.wordpress.org/reference/functions/dbdelta/)
 - [WordPress `wpdb` reference](https://developer.wordpress.org/reference/classes/wpdb/)
+
+## Amendment, 2026-08-27: reload-safe undo
+
+The audit table gained an `is_undo` marker, recorded at schema version 3. A row created by an undo is marked, so it is never itself offered as an undoable edit. Without that marker an undo would immediately present itself as a redo control, which is not what the operator asked for.
+
+The list screen now offers an undo control for an edit that survives a page reload. The offer is bounded: the current user's own edit, not already undone, not itself an undo, and less than 24 hours old. The whole page's undoable rows are read in one bounded query during preload, so the control never costs a query per row.
+
+The rendered control is a convenience only. The undo endpoint still rechecks the nonce, the current authorization, the audit row state, and that the stored value still matches the audited new value.

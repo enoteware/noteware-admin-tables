@@ -57,3 +57,13 @@ The first milestone keeps ACF adapters display-only. ACF access uses documented 
 - [WordPress `register_post_meta()` reference](https://developer.wordpress.org/reference/functions/register_post_meta/)
 - [ACF `get_field()` reference](https://www.advancedcustomfields.com/resources/get_field/)
 - [ACF `get_field_object()` reference](https://www.advancedcustomfields.com/resources/get_field_object/)
+
+## Amendment, 2026-08-27: writable ACF, taxonomy, and native adapters
+
+The adapter set now includes a taxonomy adapter, and the ACF and native adapters implement the editable contract.
+
+- ACF `text`, `url`, and `select` fields are writable through `update_field()` and `delete_field()`. Their stored value is the same string the field API returns, so a snapshot, an audit row, and a readback all describe the same storage. ACF `number`, `boolean`, `date`, and `image` fields stay display only because their stored formats differ from their returned formats and need their own decision.
+- Every ACF write confirms the ACF reference row after the write, and every removal confirms that both the value row and the reference row are gone.
+- The taxonomy adapter reads a sorted list of term slugs. WordPress cannot store an empty term assignment, so a record with no terms is `absent` and never `empty_string`. An edit replaces the whole term set with one validated slug, and undo restores the complete previous list.
+- The native adapter writes `title` and `slug` through `wp_update_post()` and `featured_image` through the WordPress thumbnail functions, each confirmed by a readback. `permalink` and `word_count` are computed and stay read only.
+- The editable contract gained `supportsRemoval()` so a field with no meaningful empty state, such as a post title, neither renders a remove control nor accepts a remove request.

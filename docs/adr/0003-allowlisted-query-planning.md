@@ -45,3 +45,14 @@ Every metadata sort supplies a `meta_query`. WordPress core groups such queries 
 - [WordPress `WP_Query` reference](https://developer.wordpress.org/reference/classes/wp_query/)
 - [WordPress `WP_Meta_Query` reference](https://developer.wordpress.org/reference/classes/wp_meta_query/)
 - [WordPress `pre_get_posts` action reference](https://developer.wordpress.org/reference/hooks/pre_get_posts/)
+
+## Amendment, 2026-08-27: filter operators and taxonomy plans
+
+A filterable column may now enable more than one operator. The allowlist is exactly `is`, `empty`, and `not_empty`, and the request selects one by name through a separate `nat_op_` parameter. An operator a column did not enable fails closed, the same as an invalid value.
+
+- `empty` matches both a missing metadata row and a stored empty string, which keeps a deliberately blank value findable.
+- `not_empty` requires the row to exist and to hold a value that is not empty.
+- Taxonomy columns plan through `WP_Tax_Query` with an exact slug match, or with `EXISTS` and `NOT EXISTS` for the two presence operators. `include_children` is off so a filter means exactly the term that was chosen.
+- Native columns still support `is` only, because their filters map onto fixed `WP_Query` arguments.
+
+Plugin taxonomy clauses are grouped with `AND` and then combined with any pre-existing taxonomy query through a top-level `AND`, mirroring the existing metadata rule.

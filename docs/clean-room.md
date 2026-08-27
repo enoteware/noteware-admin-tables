@@ -30,7 +30,7 @@ Each pull request states:
 
 Reviewers inspect the diff and run the repository clean-room, secret, and dependency checks. A scan supports human review. It does not replace it.
 
-## Public API references for the first milestone
+## Public API references
 
 WordPress:
 
@@ -42,10 +42,24 @@ WordPress:
 - https://developer.wordpress.org/reference/functions/current_user_can/
 - https://developer.wordpress.org/reference/functions/check_ajax_referer/
 - https://developer.wordpress.org/reference/functions/dbdelta/
+- https://developer.wordpress.org/reference/functions/wp_update_post/
+- https://developer.wordpress.org/reference/functions/set_post_thumbnail/
+- https://developer.wordpress.org/reference/functions/delete_post_thumbnail/
+- https://developer.wordpress.org/reference/functions/wp_set_object_terms/
+- https://developer.wordpress.org/reference/functions/get_the_terms/
+- https://developer.wordpress.org/reference/functions/get_terms/
+- https://developer.wordpress.org/reference/classes/wp_tax_query/
+- https://developer.wordpress.org/reference/functions/update_object_term_cache/
+- https://developer.wordpress.org/reference/functions/esc_url_raw/
+- https://developer.wordpress.org/reference/functions/wp_parse_url/
+- https://developer.wordpress.org/reference/hooks/manage_posts_extra_tablenav/
 
 ACF:
 
 - https://www.advancedcustomfields.com/resources/get_field/
 - https://www.advancedcustomfields.com/resources/get_field_object/
+- https://www.advancedcustomfields.com/resources/update_field/
+- https://www.advancedcustomfields.com/resources/delete_field/
+- https://www.advancedcustomfields.com/resources/url/
 
 These links identify API contracts. No prose, assets, or code are copied into the plugin from them.

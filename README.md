@@ -17,12 +17,20 @@ The first review milestone targets WordPress 6.5 or later and PHP 8.1 or later. 
 - Make large admin tables predictable and fast.
 - Follow WordPress coding, accessibility, privacy, and internationalization practices.
 
+## Current capabilities
+
+- Configurable columns for native post fields, post metadata, ACF fields, and registered taxonomies
+- Display of text, number, boolean, select, date, image, and link values, plus computed permalinks
+- Typed sorting, and filters with `is`, `is empty`, and `has a value` operators
+- Deny-by-default inline editing for allowlisted metadata scalars, ACF text, link, and select fields, taxonomy terms, post titles, post slugs, and featured images
+- Bulk editing with one capability check, one transaction, and one audit record per record
+- An append-only write audit and a conditional undo that survives a page reload
+- Explicit column order, replacement of selected built-in columns, and site-owned column widths
+
 ## Planned capabilities
 
-- Post, page, custom post type, user, media, comment, and taxonomy list tables
-- Configurable native, metadata, taxonomy, computed, and relationship columns
-- Sorting and type-aware filters
-- Safe inline and bulk editing
+- User, media, comment, and taxonomy list tables
+- Relationship columns
 - CSV export based on the active view
 - Saved personal and shared views
 - Conditional formatting
