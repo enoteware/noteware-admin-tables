@@ -7,9 +7,11 @@
  */
 
 use Noteware\AdminTables\Adapter\AcfAdapter;
+use Noteware\AdminTables\Adapter\TaxonomyAdapter;
 use Noteware\AdminTables\Adapter\AdapterRegistry;
 use Noteware\AdminTables\Adapter\MetaAdapter;
 use Noteware\AdminTables\Adapter\NativeAdapter;
+use Noteware\AdminTables\Audit\AuditRepository;
 use Noteware\AdminTables\Config\Configuration;
 use Noteware\AdminTables\Screen\PostScreenController;
 
@@ -35,8 +37,8 @@ $measure = static function (int $rows): array {
     wp_cache_flush();
 
     $configuration = new Configuration();
-    $adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter()));
-    $controller    = new PostScreenController($configuration, $adapters);
+    $adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter(), new TaxonomyAdapter()));
+    $controller    = new PostScreenController($configuration, $adapters, new AuditRepository());
 
     $queries_before = get_num_queries();
     $started_at     = microtime(true);

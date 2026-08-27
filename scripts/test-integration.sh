@@ -14,3 +14,6 @@ docker compose run --rm wpcli \
 
 docker compose run --rm wpcli \
   wp eval-file wp-content/noteware-admin-tables-tests/integration/query-safety.php
+
+docker compose run --rm wpcli \
+  wp eval-file wp-content/noteware-admin-tables-tests/integration/parity-adapters.php

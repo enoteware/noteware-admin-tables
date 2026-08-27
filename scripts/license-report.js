@@ -18,18 +18,23 @@ for (const dependency of [
 }
 
 const nodeModulesRoot = path.resolve('node_modules');
+let notInstalled = 0;
 for (const [location, dependency] of Object.entries(npm.packages || {})) {
 	if (!location) {
 		continue;
 	}
 	let installed = {};
 	const installedManifest = path.resolve(location, 'package.json');
-	if (
+	const inTree =
 		installedManifest.startsWith(`${nodeModulesRoot}${path.sep}`) &&
-		fs.existsSync(installedManifest)
-	) {
-		installed = JSON.parse(fs.readFileSync(installedManifest, 'utf8'));
+		fs.existsSync(installedManifest);
+	if (!inTree) {
+		// An optional peer that npm did not install is not part of this build.
+		// Count it so the skip is visible instead of silent.
+		notInstalled += 1;
+		continue;
 	}
+	installed = JSON.parse(fs.readFileSync(installedManifest, 'utf8'));
 	const license = [
 		dependency.license,
 		installed.license,
@@ -53,6 +58,7 @@ const missing = rows.filter((row) => 'MISSING' === row.license);
 process.stdout.write(
 	`${JSON.stringify({
 		dependencies: rows.length,
+		notInstalled,
 		blocked: blocked.length,
 		missing: missing.map((row) => `${row.manager}:${row.name}`),
 	})}\n`

@@ -18,7 +18,12 @@ module.exports = defineConfig({
 	projects: [
 		{
 			name: 'chromium',
-			use: { ...devices['Desktop Chrome'] },
+			use: {
+				...devices['Desktop Chrome'],
+				// A parity screen carries many columns, so prove it on a real
+				// desktop admin width rather than a squeezed default.
+				viewport: { width: 1680, height: 1200 },
+			},
 		},
 	],
 	webServer: undefined,

@@ -6,9 +6,9 @@ describe('admin list-screen interaction', () => {
 			<div class="nat-cell">
 				<button type="button" class="nat-edit-button" aria-expanded="false" aria-controls="nat-editor">Edit</button>
 				<div id="nat-editor" class="nat-inline-editor" hidden>
-					<input name="value" value="Before">
-					<input type="hidden" name="snapshot" value="old">
-					<input type="checkbox" name="remove" value="1">
+					<input data-field="value" value="Before">
+					<input type="hidden" data-field="snapshot" value="old">
+					<input type="checkbox" data-field="remove" value="1">
 					<button type="button" class="nat-save">Save</button>
 					<button type="button" class="nat-cancel">Cancel</button>
 				</div>

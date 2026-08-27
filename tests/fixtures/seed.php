@@ -43,6 +43,19 @@ wp_suspend_cache_invalidation(true);
 $created = 0;
 $choices = array('alpha', 'beta', 'gamma');
 
+$topics = array();
+foreach (array('Topic one', 'Topic two', 'Topic three') as $topic_index => $topic_name) {
+    $topic_slug = 'topic-' . ($topic_index + 1);
+    $existing_term = get_term_by('slug', $topic_slug, 'nat_demo_topic');
+    if (! $existing_term) {
+        $inserted_term = wp_insert_term($topic_name, 'nat_demo_topic', array('slug' => $topic_slug));
+        if (is_wp_error($inserted_term)) {
+            WP_CLI::error($inserted_term->get_error_message());
+        }
+    }
+    $topics[] = $topic_slug;
+}
+
 $attachment_ids = get_posts(
     array(
         'post_type'      => 'attachment',
@@ -126,6 +139,28 @@ for ($index = 1; $index <= $target_count; $index++) {
         update_field('field_nat_demo_choice', $choices[$index % count($choices)], $post_id);
         update_field('field_nat_demo_date', gmdate('Ymd', strtotime('2024-01-01 +' . $index . ' days')), $post_id);
         update_field('field_nat_demo_image', $fixture_image_id, $post_id);
+
+        // Links cover absent, explicit empty, and set states.
+        if (0 === $index % 13) {
+            delete_field('field_nat_demo_link', $post_id);
+        } elseif (0 === $index % 7) {
+            update_field('field_nat_demo_link', '', $post_id);
+        } else {
+            update_field('field_nat_demo_link', 'https://example.test/apply/' . $index, $post_id);
+        }
+
+        // Terms cover assigned and unassigned states.
+        if (0 === $index % 5) {
+            wp_set_object_terms($post_id, array(), 'nat_demo_topic', false);
+        } else {
+            wp_set_object_terms($post_id, array($topics[$index % count($topics)]), 'nat_demo_topic', false);
+        }
+
+        if (0 === $index % 2) {
+            set_post_thumbnail($post_id, $fixture_image_id);
+        } else {
+            delete_post_thumbnail($post_id);
+        }
     }
 }
 

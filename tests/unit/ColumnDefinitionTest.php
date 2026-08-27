@@ -75,6 +75,79 @@ final class ColumnDefinitionTest extends TestCase
         new ColumnDefinition('photo', 'Photo', 'meta', 'image', 'photo', null, false, true, false, array(), 'Not set');
     }
 
+
+    public function test_parity_options_are_captured(): void
+    {
+        $column = ColumnDefinition::fromArray(
+            array(
+                'key'           => 'apply',
+                'label'         => 'Apply link',
+                'source'        => 'acf',
+                'type'          => 'url',
+                'field'         => 'apply_url',
+                'field_key'     => 'field_apply_url',
+                'sortable'      => true,
+                'filterable'    => true,
+                'editable'      => true,
+                'bulk_editable' => true,
+                'operators'     => array('is', 'empty', 'not_empty'),
+                'width'         => '18%',
+                'replaces'      => 'title',
+                'empty_label'   => 'No link',
+            )
+        );
+
+        self::assertSame('18%', $column->width);
+        self::assertTrue($column->bulkEditable);
+        self::assertSame('title', $column->replaces);
+        self::assertSame(array('is', 'empty', 'not_empty'), $column->operators);
+        self::assertSame('is', $column->defaultOperator());
+        self::assertTrue($column->supportsOperator('empty'));
+        self::assertFalse($column->supportsOperator('unknown'));
+    }
+
+    public function test_a_read_only_column_reports_no_operator_support(): void
+    {
+        $column = ColumnDefinition::fromArray(
+            array('key' => 'score', 'label' => 'Score', 'source' => 'meta', 'type' => 'number', 'field' => 'score')
+        );
+
+        self::assertFalse($column->supportsOperator('is'));
+    }
+
+    public function test_taxonomy_and_native_parity_columns_are_accepted(): void
+    {
+        $taxonomy = ColumnDefinition::fromArray(
+            array(
+                'key'        => 'region',
+                'label'      => 'Region',
+                'source'     => 'taxonomy',
+                'type'       => 'select',
+                'field'      => 'region',
+                'filterable' => true,
+                'editable'   => true,
+                'operators'  => array('is', 'empty'),
+            )
+        );
+        $thumbnail = ColumnDefinition::fromArray(
+            array(
+                'key'      => 'thumb',
+                'label'    => 'Thumbnail',
+                'source'   => 'native',
+                'type'     => 'image',
+                'field'    => 'featured_image',
+                'editable' => true,
+            )
+        );
+        $permalink = ColumnDefinition::fromArray(
+            array('key' => 'link', 'label' => 'Link', 'source' => 'native', 'type' => 'url', 'field' => 'permalink')
+        );
+
+        self::assertTrue($taxonomy->editable);
+        self::assertTrue($thumbnail->editable);
+        self::assertFalse($permalink->editable);
+    }
+
     #[DataProvider('invalidDefinitions')]
     public function test_invalid_or_unsafe_definitions_are_rejected(array $definition): void
     {
@@ -102,5 +175,23 @@ final class ColumnDefinitionTest extends TestCase
         yield 'filterable select without choices' => array(array_replace($base, array('type' => 'select', 'filterable' => true)));
         yield 'filterable select with empty choice value' => array(array_replace($base, array('type' => 'select', 'filterable' => true, 'choices' => array('' => 'Empty'))));
         yield 'editable select without choices' => array(array_replace($base, array('type' => 'select', 'editable' => true)));
+        yield 'unknown operator' => array(array_replace($base, array('filterable' => true, 'operators' => array('like'))));
+        yield 'repeated operator' => array(array_replace($base, array('filterable' => true, 'operators' => array('is', 'is'))));
+        yield 'empty operator list' => array(array_replace($base, array('filterable' => true, 'operators' => array())));
+        yield 'operators without filtering' => array(array_replace($base, array('operators' => array('empty'))));
+        yield 'native operator beyond exact' => array(array_replace($base, array('source' => 'native', 'field' => 'status', 'type' => 'select', 'filterable' => true, 'choices' => array('publish' => 'Published'), 'operators' => array('is', 'empty'))));
+        yield 'bulk without editing' => array(array_replace($base, array('bulk_editable' => true)));
+        yield 'bulk image' => array(array_replace($base, array('source' => 'native', 'field' => 'featured_image', 'type' => 'image', 'editable' => true, 'bulk_editable' => true)));
+        yield 'bad width' => array(array_replace($base, array('width' => '18 percent')));
+        yield 'oversized width' => array(array_replace($base, array('width' => '99999px')));
+        yield 'checkbox replacement' => array(array_replace($base, array('replaces' => 'cb')));
+        yield 'bad replacement id' => array(array_replace($base, array('replaces' => 'Title Column')));
+        yield 'field key without acf' => array(array_replace($base, array('field_key' => 'field_score')));
+        yield 'acf date write' => array(array_replace($base, array('source' => 'acf', 'type' => 'date', 'field_key' => 'field_score', 'editable' => true)));
+        yield 'unsupported native type' => array(array_replace($base, array('source' => 'native', 'field' => 'featured_image', 'type' => 'text')));
+        yield 'native permalink write' => array(array_replace($base, array('source' => 'native', 'field' => 'permalink', 'type' => 'url', 'editable' => true)));
+        yield 'taxonomy sort' => array(array_replace($base, array('source' => 'taxonomy', 'field' => 'region', 'type' => 'select', 'sortable' => true)));
+        yield 'taxonomy wrong type' => array(array_replace($base, array('source' => 'taxonomy', 'field' => 'region', 'type' => 'text')));
+        yield 'taxonomy bad name' => array(array_replace($base, array('source' => 'taxonomy', 'field' => 'Region:One', 'type' => 'select')));
     }
 }

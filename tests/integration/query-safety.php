@@ -8,6 +8,7 @@
 
 use Noteware\AdminTables\Config\Configuration;
 use Noteware\AdminTables\Adapter\AcfAdapter;
+use Noteware\AdminTables\Adapter\TaxonomyAdapter;
 use Noteware\AdminTables\Adapter\AdapterRegistry;
 use Noteware\AdminTables\Adapter\MetaAdapter;
 use Noteware\AdminTables\Adapter\NativeAdapter;
@@ -153,7 +154,7 @@ acf_add_local_field_group(
 
 set_current_screen('edit-nat_demo_record');
 $configuration = new Configuration();
-$adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter()));
+$adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter(), new TaxonomyAdapter()));
 $controller    = new QueryController($configuration, $adapters);
 $query         = new WP_Query();
 $query->set('post_type', 'nat_demo_record');
