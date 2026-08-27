@@ -186,6 +186,11 @@ final class ColumnDefinition
         if ($this->filterable && ! in_array($this->field, self::NATIVE_FILTERABLE, true)) {
             throw new InvalidArgumentException('This native field does not support filtering.');
         }
+        if ($this->filterable && 'author' === $this->field && 'number' !== $this->type) {
+            // The author filter matches a user ID, so a display-name column
+            // would reject every value a reader could type.
+            throw new InvalidArgumentException('An author column must use the number type to be filterable.');
+        }
         if ($this->editable && ! in_array($this->field, self::NATIVE_EDITABLE, true)) {
             throw new InvalidArgumentException('This native field is not editable.');
         }

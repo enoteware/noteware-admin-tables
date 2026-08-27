@@ -186,6 +186,7 @@ final class ColumnDefinitionTest extends TestCase
         yield 'oversized width' => array(array_replace($base, array('width' => '99999px')));
         yield 'checkbox replacement' => array(array_replace($base, array('replaces' => 'cb')));
         yield 'title replacement' => array(array_replace($base, array('replaces' => 'title')));
+        yield 'text author filter' => array(array_replace($base, array('source' => 'native', 'field' => 'author', 'type' => 'text', 'filterable' => true)));
         yield 'bad replacement id' => array(array_replace($base, array('replaces' => 'Title Column')));
         yield 'field key without acf' => array(array_replace($base, array('field_key' => 'field_score')));
         yield 'acf date write' => array(array_replace($base, array('source' => 'acf', 'type' => 'date', 'field_key' => 'field_score', 'editable' => true)));

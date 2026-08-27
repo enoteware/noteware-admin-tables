@@ -16,8 +16,8 @@ final class AuditRepository
 {
     private const SCHEMA_VERSION = '3';
 
-    /** How long a completed edit stays undoable from the list screen. */
-    private const UNDO_WINDOW_SECONDS = 86400;
+    /** How long a completed edit stays undoable. */
+    public const UNDO_WINDOW_SECONDS = 86400;
 
     /** The configuration cap on columns per screen. */
     private const MAX_COLUMNS_PER_SCREEN = 100;

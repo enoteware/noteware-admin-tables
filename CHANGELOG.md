@@ -23,6 +23,7 @@ All notable changes to this project are documented in this file.
 
 ### Security
 
+- The undo endpoint enforces the same 24 hour deadline the control advertises. A nonce stays valid longer than that window, so a page left open could otherwise undo an edit after the deadline. An undo can also no longer be undone through the endpoint.
 - Undo re-validates an audited ACF value against the field as it is now, so a field that became required or lost a choice cannot have an invalid value restored.
 - The checkbox and title columns can no longer be replaced or removed. WordPress renders row actions and bulk selection from them, so a configuration that took either one stripped Edit, Quick Edit, Trash, View, and selection from every row.
 - Every table an edit writes is now checked for a transaction engine, not just post metadata and the audit table. A taxonomy or native write on a non transactional table is refused instead of committing outside the transaction.
@@ -42,6 +43,7 @@ All notable changes to this project are documented in this file.
 - A bulk edit now replaces a cell's existing undo control instead of leaving one that points at an older audit row and fails when clicked.
 - The bulk editor offers a clear option for every column whose adapter supports removal, so a taxonomy or select value can be cleared in bulk instead of only overwritten.
 - A column whose only operator is a presence operator renders that control, with a neutral first option so the initial screen matches an unfiltered list.
+- A native author column now agrees with itself. A numeric column reads the user ID that the filter matches, a text column reads the display name, and a text author column can no longer be marked filterable, because the filter matches an ID.
 - A taxonomy larger than the bounded choice list keeps its presence filters, which never needed a term list.
 - The page-scoped undo lookup selects the newest row per cell in the database, so repeated edits of one cell cannot hide another cell's undo control.
 - The repository scan fails when it cannot run, instead of passing silently on a tool error, and it no longer names the things it prohibits. It also uses `grep`, which is always present. Ripgrep is not installed on the continuous integration runner, so the previous version of this scan had never actually run there.

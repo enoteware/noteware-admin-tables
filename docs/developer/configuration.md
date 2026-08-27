@@ -49,6 +49,8 @@ Editing stays deny by default and is limited to a documented set:
 | `taxonomy` | `select` | One term slug replaces the whole term set for that taxonomy. |
 | `native` | `title`, `slug`, `featured_image` | Written through `wp_update_post()` and the WordPress thumbnail functions. |
 
+A native `author` column reads the user ID when its type is `number` and the display name when its type is `text`. Only the numeric form can be filtered, because the filter matches an ID.
+
 ACF number, boolean, and date fields stay display only. Their stored formats need their own decision record before a write path is safe. The `permalink` native field is always display only.
 
 ### Column options

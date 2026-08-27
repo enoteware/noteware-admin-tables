@@ -848,6 +848,61 @@ foreach ($bulk_posts as $bulk_post) {
     $assert('javascript:alert(1)' !== get_post_meta($bulk_post, 'nat_demo_link', true), 'A rejected bulk value must never be written.');
 }
 
+// The undo endpoint enforces the same deadline the control advertises.
+$deadline_state  = $acf_adapter->read($link_post, $link_column);
+$deadline_result = $edits->processEdit(
+    $edit_request($link_post, 'nat_demo_link', 'https://example.test/apply/deadline', $deadline_state->hash())
+);
+$deadline_id = (int) $deadline_result['auditId'];
+$wpdb->query(
+    $wpdb->prepare(
+        'UPDATE %i SET created_at = %s WHERE id = %d',
+        $audit_table,
+        gmdate('Y-m-d H:i:s', time() - 90000),
+        $deadline_id
+    )
+);
+$expect_failure(
+    static fn (): array => $edits->processUndo(
+        array('audit_id' => (string) $deadline_id, 'nonce' => (string) $deadline_result['undoNonce'])
+    ),
+    'An edit past the undo deadline must not be undone through the endpoint.'
+);
+$assert('https://example.test/apply/deadline' === get_post_meta($link_post, 'nat_demo_link', true), 'A refused late undo must leave the current value in place.');
+$wpdb->query($wpdb->prepare('UPDATE %i SET created_at = %s WHERE id = %d', $audit_table, current_time('mysql', true), $deadline_id));
+$edits->processUndo(array('audit_id' => (string) $deadline_id, 'nonce' => (string) $deadline_result['undoNonce']));
+
+// A native author column agrees with itself.
+$author_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+    array(
+        'key'        => 'nat_test_author_id',
+        'label'      => 'Author id',
+        'source'     => 'native',
+        'type'       => 'number',
+        'field'      => 'author',
+        'filterable' => true,
+    )
+);
+$author_name_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+    array(
+        'key'    => 'nat_test_author_name',
+        'label'  => 'Author name',
+        'source' => 'native',
+        'type'   => 'text',
+        'field'  => 'author',
+    )
+);
+$author_original = (int) get_post_field('post_author', $link_post);
+wp_update_post(array('ID' => $link_post, 'post_author' => $administrator->ID));
+clean_post_cache($link_post);
+$author_id_value   = $native_adapter->read($link_post, $author_column)->value;
+$author_name_value = $native_adapter->read($link_post, $author_name_column)->value;
+$assert(is_int($author_id_value) && $author_id_value > 0, 'A numeric author column must read the user ID the filter matches.');
+$assert(is_string($author_name_value) && '' !== $author_name_value, 'A text author column must read the display name.');
+$assert($administrator->ID === $author_id_value, 'A numeric author column must read the exact user ID.');
+wp_update_post(array('ID' => $link_post, 'post_author' => $author_original));
+clean_post_cache($link_post);
+
 WP_CLI::line('NAT_PARITY_STAGE=bulk');
 
 if ($failures) {

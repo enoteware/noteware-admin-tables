@@ -59,7 +59,11 @@ final class NativeAdapter implements EditableFieldAdapter
             'id'         => $post->ID,
             'title'      => $post->post_title,
             'slug'       => $post->post_name,
-            'author'     => (string) get_the_author_meta('display_name', (int) $post->post_author),
+            // A numeric author column is the user ID, which is also what the
+            // author filter matches. A text column shows the display name.
+            'author'     => 'number' === $column->type
+                ? (int) $post->post_author
+                : (string) get_the_author_meta('display_name', (int) $post->post_author),
             'date'       => $post->post_date,
             'status'     => $post->post_status,
             'word_count' => str_word_count(wp_strip_all_tags($post->post_content)),

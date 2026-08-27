@@ -142,6 +142,16 @@ final class EditController
         if (! $row || ! empty($row['undone_at'])) {
             throw new InvalidArgumentException('This edit cannot be undone.');
         }
+        if (! empty($row['is_undo'])) {
+            throw new InvalidArgumentException('An undo cannot itself be undone.');
+        }
+        // The endpoint enforces the same deadline the control advertises. A
+        // nonce stays valid longer than the undo window, so a page left open
+        // must not become a way to undo an edit after the deadline.
+        $createdAt = strtotime((string) ($row['created_at'] ?? '') . ' UTC');
+        if (false === $createdAt || (time() - $createdAt) > AuditRepository::UNDO_WINDOW_SECONDS) {
+            throw new InvalidArgumentException('This edit is too old to undo here. Change the value directly instead.');
+        }
 
         $postId   = (int) $row['post_id'];
         $postType = get_post_type($postId);
