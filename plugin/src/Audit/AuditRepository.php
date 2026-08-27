@@ -14,9 +14,15 @@ use Noteware\AdminTables\Model\StoredValue;
 
 final class AuditRepository
 {
-    private const SCHEMA_VERSION = '2';
+    private const SCHEMA_VERSION = '3';
+
+    /** How long a completed edit stays undoable from the list screen. */
+    private const UNDO_WINDOW_SECONDS = 86400;
 
     private bool $transactionalTablesVerified = false;
+
+    /** @var array<string, int> */
+    private array $undoIndex = array();
 
     public function maybeInstall(): void
     {
@@ -47,6 +53,7 @@ final class AuditRepository
             undone_at datetime NULL,
             undone_by bigint(20) unsigned NULL,
             undo_audit_id bigint(20) unsigned NULL,
+            is_undo tinyint(1) unsigned NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
             KEY post_column (post_id, column_key),
             KEY created_at (created_at)
@@ -57,8 +64,11 @@ final class AuditRepository
         update_option('nat_audit_schema_version', self::SCHEMA_VERSION, false);
     }
 
-    /** @param array{column_key: string, source: string, field_name: string} $descriptor Trusted adapter identifiers. */
-    public function record(int $postId, string $postType, array $descriptor, StoredValue $before, StoredValue $after): int
+    /**
+     * @param array{column_key: string, source: string, field_name: string} $descriptor Trusted adapter identifiers.
+     * @param bool                                                          $isUndo     Whether this row records an undo.
+     */
+    public function record(int $postId, string $postType, array $descriptor, StoredValue $before, StoredValue $after, bool $isUndo = false): int
     {
         global $wpdb;
         $inserted = $wpdb->insert(
@@ -73,13 +83,62 @@ final class AuditRepository
                 'after_value'  => wp_json_encode($after->toArray(), JSON_UNESCAPED_SLASHES),
                 'user_id'      => get_current_user_id(),
                 'created_at'   => current_time('mysql', true),
+                'is_undo'      => $isUndo ? 1 : 0,
             ),
-            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s')
+            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d')
         );
         if (false === $inserted) {
             throw new RuntimeException('The audit record could not be stored.');
         }
         return (int) $wpdb->insert_id;
+    }
+
+    /**
+     * Load every still-undoable edit this user made on one page of records.
+     *
+     * This runs once per list screen so the undo control never costs a query
+     * per rendered row.
+     *
+     * @param list<int> $postIds Page-scoped post IDs.
+     */
+    public function preloadUndoable(array $postIds, int $userId): void
+    {
+        $this->undoIndex = array();
+        if (! $postIds || $userId < 1) {
+            return;
+        }
+
+        global $wpdb;
+        $placeholders = implode(', ', array_fill(0, count($postIds), '%d'));
+        $since        = gmdate('Y-m-d H:i:s', time() - self::UNDO_WINDOW_SECONDS);
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The placeholder list is generated from a counted array of integers.
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, post_id, column_key FROM %i
+                 WHERE post_id IN ({$placeholders})
+                   AND user_id = %d
+                   AND undone_at IS NULL
+                   AND is_undo = 0
+                   AND created_at >= %s
+                 ORDER BY id ASC",
+                array_merge(array($this->table()), $postIds, array($userId, $since))
+            ),
+            ARRAY_A
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+        foreach ((array) $rows as $row) {
+            if (! is_array($row) || ! isset($row['id'], $row['post_id'], $row['column_key'])) {
+                continue;
+            }
+            $this->undoIndex[$row['post_id'] . ':' . $row['column_key']] = (int) $row['id'];
+        }
+    }
+
+    /** The most recent undoable edit id for one cell, if the page preloaded one. */
+    public function undoableId(int $postId, string $columnKey): ?int
+    {
+        return $this->undoIndex[$postId . ':' . $columnKey] ?? null;
     }
 
     /** @return array<string, mixed>|null */

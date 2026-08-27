@@ -86,6 +86,9 @@ final class EditController
         }
         $adapter->authorize($postId, $column);
         $remove = '1' === $this->requestValue($request, 'remove', true);
+        if ($remove && ! $adapter->supportsRemoval($column)) {
+            throw new InvalidArgumentException('This field cannot be cleared.');
+        }
 
         $this->audit->begin();
         try {
@@ -115,7 +118,7 @@ final class EditController
             'undoLabel'  => __('Undo', 'noteware-admin-tables'),
             'savedLabel' => __('Saved.', 'noteware-admin-tables'),
             'snapshot'   => $after->hash(),
-            'value'      => $this->editableValue($after),
+            'value'      => $this->renderer->editableValue($after),
             'exists'     => $after->exists,
         );
     }
@@ -168,7 +171,7 @@ final class EditController
             }
             $adapter->restore($postId, $column, $current, $target);
             $restored    = $adapter->read($postId, $column);
-            $undoAuditId = $this->audit->record($postId, $postType, $adapter->auditDescriptor($column), $current, $restored);
+            $undoAuditId = $this->audit->record($postId, $postType, $adapter->auditDescriptor($column), $current, $restored, true);
             if (! $this->audit->markUndone($auditId, $undoAuditId)) {
                 throw new InvalidArgumentException('This edit was already undone.');
             }
@@ -181,7 +184,7 @@ final class EditController
             'text'     => $this->renderer->text($column, $restored),
             'message'  => __('Edit undone.', 'noteware-admin-tables'),
             'snapshot' => $restored->hash(),
-            'value'    => $this->editableValue($restored),
+            'value'    => $this->renderer->editableValue($restored),
             'exists'   => $restored->exists,
         );
     }
@@ -222,11 +225,6 @@ final class EditController
             throw new InvalidArgumentException('The audit snapshot is invalid.');
         }
         return new StoredValue((bool) $decoded['exists'], $decoded['value']);
-    }
-
-    private function editableValue(StoredValue $stored): string
-    {
-        return $stored->exists && is_scalar($stored->value) ? (string) $stored->value : '';
     }
 
     private function safeError(Throwable $error): string
