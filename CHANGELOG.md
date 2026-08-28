@@ -48,6 +48,7 @@ All notable changes to this project are documented in this file.
 - A bulk edit now replaces a cell's existing undo control instead of leaving one that points at an older audit row and fails when clicked.
 - The bulk editor offers a clear option for every column whose adapter supports removal, so a taxonomy or select value can be cleared in bulk instead of only overwritten.
 - A column whose only operator is a presence operator renders that control, with a neutral first option so the initial screen matches an unfiltered list.
+- A writable ACF text field's own length limit is enforced. `update_field()` writes past the rule ACF applies on its own form, so an inline or bulk edit could store a longer value than the field permits.
 - A group undo runs a few requests at a time rather than all at once. A hundred simultaneous requests would occupy a normal worker pool and time out both the undos and unrelated admin requests.
 - A select column with no legal value no longer advertises the stale configured options that every save would reject. The editor and the bulk control are withheld instead.
 - The word count reads any script. `str_word_count()` is locale dependent, returns zero for Chinese, Japanese, or Arabic content, and splits accented Latin text incorrectly.

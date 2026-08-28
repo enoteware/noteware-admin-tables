@@ -41,6 +41,9 @@ final class AcfAdapter implements EditableFieldAdapter
     /** @var array<string, bool> */
     private array $requiredCache = array();
 
+    /** @var array<string, int> */
+    private array $maxLengthCache = array();
+
     public function source(): string
     {
         return 'acf';
@@ -86,6 +89,11 @@ final class AcfAdapter implements EditableFieldAdapter
             && self::TYPES[$column->type] === $field['type'];
         if ($supported && is_array($field)) {
             $this->requiredCache[$cacheKey] = ! empty($field['required']);
+            unset($this->maxLengthCache[$cacheKey]);
+            $maxLength = $field['maxlength'] ?? null;
+            if (is_numeric($maxLength) && (int) $maxLength > 0) {
+                $this->maxLengthCache[$cacheKey] = (int) $maxLength;
+            }
         }
         if ($supported && 'select' === $column->type) {
             $supported = $this->cacheSelectChoices($column, $field, $cacheKey);
@@ -140,6 +148,13 @@ final class AcfAdapter implements EditableFieldAdapter
 
         if ('' === $validated && $this->isRequired($column)) {
             throw new InvalidArgumentException('This field is required, so it cannot be left empty.');
+        }
+
+        // update_field() writes past the length rule ACF applies on its own
+        // form, so the field's own limit is enforced here.
+        $maxLength = $this->maxLength($column);
+        if (null !== $maxLength && is_string($validated) && mb_strlen($validated) > $maxLength) {
+            throw new InvalidArgumentException('This value is longer than the field allows.');
         }
 
         return $validated;
@@ -215,6 +230,15 @@ final class AcfAdapter implements EditableFieldAdapter
             return false;
         }
         return $this->requiredCache[$this->cacheKey($column)] ?? false;
+    }
+
+    /** The live field's own length limit, when it defines one. */
+    public function maxLength(ColumnDefinition $column): ?int
+    {
+        if (! $this->supports($column)) {
+            return null;
+        }
+        return $this->maxLengthCache[$this->cacheKey($column)] ?? null;
     }
 
     public function remove(int $postId, ColumnDefinition $column, StoredValue $expected): void

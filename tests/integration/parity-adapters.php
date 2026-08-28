@@ -576,6 +576,43 @@ if (! is_wp_error($word_post)) {
     wp_delete_post((int) $word_post, true);
 }
 
+// The live field's own length limit must be enforced, because update_field()
+// writes past the rule ACF applies on its own form.
+acf_add_local_field_group(
+    array(
+        'key'      => 'group_nat_test_bounded',
+        'title'    => 'Bounded test field',
+        'fields'   => array(
+            array(
+                'key'       => 'field_nat_test_bounded',
+                'label'     => 'Bounded text',
+                'name'      => 'nat_test_bounded',
+                'type'      => 'text',
+                'maxlength' => 10,
+            ),
+        ),
+        'location' => array(),
+    )
+);
+$bounded_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+    array(
+        'key'       => 'nat_test_bounded',
+        'label'     => 'Bounded text',
+        'source'    => 'acf',
+        'type'      => 'text',
+        'field'     => 'nat_test_bounded',
+        'field_key' => 'field_nat_test_bounded',
+        'editable'  => true,
+    )
+);
+$bounded_adapter = new AcfAdapter();
+$assert(10 === $bounded_adapter->maxLength($bounded_column), 'The adapter must read the live field length limit.');
+$assert('exactly-10' === $bounded_adapter->validate($bounded_column, 'exactly-10'), 'A value inside the limit must pass.');
+$expect_failure(
+    static fn (): mixed => $bounded_adapter->validate($bounded_column, 'this is far too long'),
+    'A value longer than the live field allows must be rejected.'
+);
+
 WP_CLI::line('NAT_PARITY_STAGE=adapters');
 
 // --- Column order, removal, replacement, and widths --------------------------
