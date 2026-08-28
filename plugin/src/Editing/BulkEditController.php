@@ -123,6 +123,14 @@ final class BulkEditController
         $this->audit->begin($adapter->transactionalTables($column));
         try {
             $adapter->lock($postId, $column);
+            // The record is only pinned once it is locked. Another request can
+            // change its owner or status between the check above and the lock,
+            // so both checks run again against freshly read state.
+            clean_post_cache($postId);
+            if (get_post_type($postId) !== $postType) {
+                throw new InvalidArgumentException('That record is not on this screen.');
+            }
+            $adapter->authorize($postId, $column);
             $before = $adapter->read($postId, $column);
             if ($remove) {
                 $adapter->remove($postId, $column, $before);

@@ -66,7 +66,10 @@ final class NativeAdapter implements EditableFieldAdapter
                 : (string) get_the_author_meta('display_name', (int) $post->post_author),
             'date'       => $post->post_date,
             'status'     => $post->post_status,
-            'word_count' => str_word_count(wp_strip_all_tags($post->post_content)),
+            // str_word_count() is locale dependent and returns zero for
+            // Chinese, Japanese, or Arabic content, and splits accented Latin
+            // text incorrectly.
+            'word_count' => preg_match_all('/[\p{L}\p{N}]+/u', wp_strip_all_tags($post->post_content)),
             'permalink'  => null,
             default      => null,
         };
@@ -174,13 +177,26 @@ final class NativeAdapter implements EditableFieldAdapter
         }
     }
 
+    /**
+     * Undo re-validates the audited target against the media library as it is
+     * now. An attachment can be deleted, replaced, or made unreadable after an
+     * edit, and set_post_thumbnail() applies no such check on its own.
+     */
     public function restore(int $postId, ColumnDefinition $column, StoredValue $current, StoredValue $target): void
     {
-        if ($target->exists) {
-            $this->write($postId, $column, $target->value, $current);
+        if (! $target->exists) {
+            $this->remove($postId, $column, $current);
             return;
         }
-        $this->remove($postId, $column, $current);
+
+        if ('featured_image' === $column->field) {
+            if (! is_scalar($target->value)) {
+                throw new RuntimeException('The audited featured image is not valid.');
+            }
+            $this->attachment((string) $target->value);
+        }
+
+        $this->write($postId, $column, $target->value, $current);
     }
 
     public function auditDescriptor(ColumnDefinition $column): array

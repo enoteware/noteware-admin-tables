@@ -154,12 +154,14 @@ final class PostScreenController
         $stored  = $adapter->read($postId, $column);
 
         $editor = '';
-        if ($column->editable && $adapter instanceof EditableFieldAdapter && $this->mayEdit($adapter, $postId, $column)) {
+        $choices = $this->choicesFor($column);
+        $editableNow = 'select' !== $column->type || (bool) $choices;
+        if ($editableNow && $column->editable && $adapter instanceof EditableFieldAdapter && $this->mayEdit($adapter, $postId, $column)) {
             $editor = $this->renderer->editor(
                 $postId,
                 $column,
                 $stored,
-                $this->choicesFor($column),
+                $choices,
                 $adapter->supportsRemoval($column)
             );
             $auditId = $this->audit?->undoableId($postId, $column->key);
@@ -332,6 +334,11 @@ final class PostScreenController
         foreach ($this->configuration->columns($postType) as $column) {
             $adapter = $this->adapters->get($column->source);
             if (! $column->bulkEditable || ! $adapter instanceof EditableFieldAdapter || ! $adapter->supports($column)) {
+                continue;
+            }
+            if ('select' === $column->type && ! $this->choicesFor($column)) {
+                // No legal value exists right now, so a control here would
+                // advertise options every save rejects.
                 continue;
             }
             $columns[] = $column;

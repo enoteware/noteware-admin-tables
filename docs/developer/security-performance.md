@@ -32,6 +32,12 @@ Undo resolves every audited term slug to an existing term before assigning it. P
 
 A taxonomy column must be registered for the screen's post type. A taxonomy with an admin interface but a different post type is refused at the screen, the query, and the write.
 
+A bulk edit repeats the record-type and authorization checks after the lock is held. Until the record is locked, another request can change its owner or status, and the check before the lock would have been made against stale state.
+
+Upgrading the audit schema marks rows that an earlier version recorded as undo results. Without that step, upgrading would present them as ordinary edits and let a user redo an edit they had already reversed.
+
+A site restriction on an ACF reference key is honoured where the site registered that key. The check is deliberately conditional: an ACF reference key starts with an underscore, WordPress denies `edit_post_meta` on any such key by default, and an unconditional check would refuse every ACF edit on every site.
+
 Bulk editing runs the same seven checks. It validates the submitted value once, before any record is touched, then repeats the capability check, lock, snapshot read, write, readback, and audit record on each record inside its own transaction. A denied or failing record is reported by ID and does not roll back the records that succeeded. See [ADR 0007](../adr/0007-bulk-editing-boundaries.md).
 
 Inline editor controls and the bulk panel are rendered inside the WordPress list filter form, so their fields carry `data-field` rather than `name`. A `name` would serialize every rendered editor into the filter URL, which breaks the screen with a request that is too long as soon as a site configures several editable columns. An integration assertion guards this.

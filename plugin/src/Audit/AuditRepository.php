@@ -68,6 +68,7 @@ final class AuditRepository
         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         dbDelta($sql);
         $this->assertTransactionalTables(array());
+        $this->markLegacyUndoRows();
         update_option('nat_audit_schema_version', self::SCHEMA_VERSION, false);
     }
 
@@ -98,6 +99,27 @@ final class AuditRepository
             throw new RuntimeException('The audit record could not be stored.');
         }
         return (int) $wpdb->insert_id;
+    }
+
+    /**
+     * Mark rows that an earlier schema recorded as undo results.
+     *
+     * Before the is_undo column existed, an undo looked exactly like an
+     * ordinary edit. Left alone, upgrading would offer those rows as undoable
+     * and let a user redo the very edit they had already reversed.
+     */
+    private function markLegacyUndoRows(): void
+    {
+        global $wpdb;
+        $wpdb->query(
+            $wpdb->prepare(
+                'UPDATE %i SET is_undo = 1
+                 WHERE is_undo = 0
+                   AND id IN (SELECT undo_audit_id FROM (SELECT undo_audit_id FROM %i WHERE undo_audit_id IS NOT NULL) AS referenced)',
+                $this->table(),
+                $this->table()
+            )
+        );
     }
 
     /**

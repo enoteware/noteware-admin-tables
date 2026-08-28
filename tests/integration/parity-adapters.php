@@ -543,6 +543,39 @@ $expect_failure(
 $assert('field_wrong_reference' === get_post_meta($link_post, '_nat_demo_link', true), 'A refused write must leave the inconsistent reference untouched.');
 update_post_meta($link_post, '_nat_demo_link', $reference_backup);
 
+// A deliberate site restriction on the ACF reference key is honoured.
+register_meta(
+    'post',
+    '_nat_demo_link',
+    array(
+        'object_subtype' => 'nat_demo_record',
+        'type'           => 'string',
+        'single'         => true,
+        'auth_callback'  => static fn (): bool => false,
+    )
+);
+$restricted_state = $acf_adapter->read($link_post, $link_column);
+$expect_failure(
+    static fn (): array => $edits->processEdit($edit_request($link_post, 'nat_demo_link', 'https://example.test/apply/restricted', $restricted_state->hash())),
+    'A denied ACF reference key must refuse the write.'
+);
+$assert('https://example.test/apply/restricted' !== get_post_meta($link_post, 'nat_demo_link', true), 'A denied reference key must not change the value.');
+unregister_meta_key('post', '_nat_demo_link', 'nat_demo_record');
+
+// A word count must handle content that is not Latin script.
+$word_column = Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+    array('key' => 'nat_test_words', 'label' => 'Words', 'source' => 'native', 'type' => 'number', 'field' => 'word_count')
+);
+$word_post = wp_insert_post(
+    array('post_type' => 'nat_demo_record', 'post_status' => 'draft', 'post_title' => 'Word count probe', 'post_content' => "\u{4f60}\u{597d} \u{4e16}\u{754c} caf\u{e9} na\u{ef}ve"),
+    true
+);
+if (! is_wp_error($word_post)) {
+    $word_value = $native_adapter->read((int) $word_post, $word_column)->value;
+    $assert(4 === $word_value, sprintf('A word count must see words in any script, counted %s.', var_export($word_value, true)));
+    wp_delete_post((int) $word_post, true);
+}
+
 WP_CLI::line('NAT_PARITY_STAGE=adapters');
 
 // --- Column order, removal, replacement, and widths --------------------------

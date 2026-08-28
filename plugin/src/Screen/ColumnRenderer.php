@@ -84,14 +84,14 @@ final class ColumnRenderer
     }
 
     /**
-     * @param array<array-key, string> $choices   Allowed editor choices.
+     * @param array<array-key, string>|null $choices   Allowed editor choices, or null to fall back to the configured list.
      * @param bool                  $removable Whether the adapter can clear the value.
      */
     public function editor(
         int $postId,
         ColumnDefinition $column,
         StoredValue $stored,
-        array $choices = array(),
+        ?array $choices = null,
         bool $removable = true
     ): string {
         if (! $column->editable) {
@@ -134,9 +134,9 @@ final class ColumnRenderer
     /**
      * A standalone control used by the bulk editor panel.
      *
-     * @param array<array-key, string> $choices Allowed editor choices.
+     * @param array<array-key, string>|null $choices Allowed editor choices, or null to fall back to the configured list.
      */
-    public function bulkControl(ColumnDefinition $column, array $choices = array()): string
+    public function bulkControl(ColumnDefinition $column, ?array $choices = null): string
     {
         return $this->control('nat-bulk-value-' . $column->key, $column, '', $choices);
     }
@@ -157,15 +157,19 @@ final class ColumnRenderer
     }
 
     /**
-     * @param array<array-key, string> $choices Allowed editor choices.
+     * @param array<array-key, string>|null $choices Allowed editor choices, or null to fall back to the configured list.
      */
-    private function control(string $controlId, ColumnDefinition $column, string $value, array $choices): string
+    private function control(string $controlId, ColumnDefinition $column, string $value, ?array $choices): string
     {
         if ('boolean' === $column->type) {
             $choices = array('1' => __('Yes', 'noteware-admin-tables'), '0' => __('No', 'noteware-admin-tables'));
-        } elseif ('select' === $column->type && ! $choices) {
+        } elseif ('select' === $column->type && null === $choices) {
+            // Null means the caller had no opinion. An empty array means there
+            // are genuinely no legal values right now, and offering the stale
+            // configured list would advertise options every save rejects.
             $choices = $column->choices;
         }
+        $choices = $choices ?? array();
 
         if (in_array($column->type, array('boolean', 'select'), true)) {
             $html = '<select id="' . esc_attr($controlId) . '" data-field="value">';

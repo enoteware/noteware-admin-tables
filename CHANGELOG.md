@@ -23,6 +23,11 @@ All notable changes to this project are documented in this file.
 
 ### Security
 
+- Upgrading the audit schema marks rows an earlier version recorded as undo results. Without that, upgrading would offer those rows as undoable and let a user redo the very edit they had already reversed.
+- A bulk edit rechecks the record type and the adapter authorization after acquiring the record lock, so a permission or ownership change made by a concurrent request cannot be bypassed.
+- Undo re-validates an audited featured image against the media library as it is now, so a deleted, replaced, or unreadable attachment cannot be restored.
+- A deliberate site restriction on an ACF reference key is honoured. The check runs only where the site registered that key, because WordPress denies `edit_post_meta` on any underscore-prefixed key by default and an unconditional check would refuse every ACF edit everywhere.
+- The repository scan reads its file list from `git ls-files`. Scanning the working directory pulled in a developer's ignored `.env`, which both failed the check on a correct machine and printed real sandbox credentials into the log.
 - The undo endpoint enforces the same 24 hour deadline the control advertises. A nonce stays valid longer than that window, so a page left open could otherwise undo an edit after the deadline. An undo can also no longer be undone through the endpoint.
 - Undo re-validates an audited ACF value against the field as it is now, so a field that became required or lost a choice cannot have an invalid value restored.
 - The checkbox and title columns can no longer be replaced or removed. WordPress renders row actions and bulk selection from them, so a configuration that took either one stripped Edit, Quick Edit, Trash, View, and selection from every row.
@@ -43,6 +48,9 @@ All notable changes to this project are documented in this file.
 - A bulk edit now replaces a cell's existing undo control instead of leaving one that points at an older audit row and fails when clicked.
 - The bulk editor offers a clear option for every column whose adapter supports removal, so a taxonomy or select value can be cleared in bulk instead of only overwritten.
 - A column whose only operator is a presence operator renders that control, with a neutral first option so the initial screen matches an unfiltered list.
+- A group undo runs a few requests at a time rather than all at once. A hundred simultaneous requests would occupy a normal worker pool and time out both the undos and unrelated admin requests.
+- A select column with no legal value no longer advertises the stale configured options that every save would reject. The editor and the bulk control are withheld instead.
+- The word count reads any script. `str_word_count()` is locale dependent, returns zero for Chinese, Japanese, or Arabic content, and splits accented Latin text incorrectly.
 - The author filter can select records whose author is zero, which is a real state for imported and system-generated posts. It uses an exact list, because the WordPress author argument treats zero as no filter at all.
 - A native author column now agrees with itself. A numeric column reads the user ID that the filter matches, a text column reads the display name, and a text author column can no longer be marked filterable, because the filter matches an ID.
 - A taxonomy larger than the bounded choice list keeps its presence filters, which never needed a term list.

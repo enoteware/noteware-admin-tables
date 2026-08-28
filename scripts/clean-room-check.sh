@@ -4,31 +4,40 @@ set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$repo_dir"
 
-if ! command -v grep >/dev/null 2>&1; then
-  printf '%s\n' 'grep is required for this scan.' >&2
-  exit 1
-fi
+for tool in grep git; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    printf '%s is required for this scan.\n' "$tool" >&2
+    exit 1
+  fi
+done
 
 if git ls-files --error-unmatch .env >/dev/null 2>&1; then
   printf '%s\n' 'Tracked .env files are not allowed.' >&2
   exit 1
 fi
 
-# Run one scan over tracked project content. A scan that cannot run is not a
-# scan that passed, so any tool error fails the check.
+# Only tracked files are scanned. A developer's ignored .env holds real sandbox
+# credentials, and scanning the working directory would both fail this check on
+# a correct machine and print those credentials into the log.
+tracked=$(mktemp)
+trap 'rm -f "$tracked"' EXIT HUP INT TERM
+git ls-files -z \
+  ':!:package-lock.json' \
+  ':!:composer.lock' \
+  ':!:scripts/clean-room-check.sh' \
+  > "$tracked"
+
+if [ ! -s "$tracked" ]; then
+  printf '%s\n' 'No tracked files were listed, so the scan cannot be treated as passing.' >&2
+  exit 1
+fi
+
+# Run one scan over tracked content. A scan that cannot run is not a scan that
+# passed, so any tool error fails the check.
 scan() {
   scan_output=""
   set +e
-  scan_output=$(grep -R -n -I -i -E \
-    --exclude-dir=.git \
-    --exclude-dir=node_modules \
-    --exclude-dir=vendor \
-    --exclude-dir=test-results \
-    --exclude-dir=playwright-report \
-    --exclude=package-lock.json \
-    --exclude=composer.lock \
-    --exclude=clean-room-check.sh \
-    "$1" .)
+  scan_output=$(xargs -0 grep -n -I -i -E "$1" < "$tracked")
   scan_status=$?
   set -e
 
@@ -62,13 +71,9 @@ fi
 
 # User-facing project content must not use an em-dash or an en-dash.
 set +e
-dashes=$(grep -R -n -I \
-  --exclude-dir=.git \
-  --exclude-dir=node_modules \
-  --exclude-dir=vendor \
-  --exclude=clean-room-check.sh \
-  -e '—' -e '–' \
-  README.md ROADMAP.md HANDOFF.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs plugin sandbox tests .github scripts)
+dashes=$(git ls-files -z -- README.md ROADMAP.md HANDOFF.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs plugin sandbox tests .github scripts \
+  ':!:scripts/clean-room-check.sh' \
+  | xargs -0 grep -n -I -e '—' -e '–')
 dash_status=$?
 set -e
 if [ "$dash_status" -gt 1 ]; then

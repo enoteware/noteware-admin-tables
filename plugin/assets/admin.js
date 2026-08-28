@@ -378,43 +378,63 @@
 		}
 	}
 
+	// A bulk edit can cover a hundred records. Firing a hundred requests at
+	// once would occupy a normal PHP worker pool and time out both these undos
+	// and unrelated admin requests, so they run a few at a time.
+	const UNDO_CONCURRENCY = 4;
+
+	function undoOne(change) {
+		return sendUndo(change.auditId, change.nonce).then(function (result) {
+			const cell = document.querySelector(
+				'#post-' +
+					String(change.postId) +
+					' .nat-cell[data-column="' +
+					change.column +
+					'"]'
+			);
+			if (cell) {
+				paintCell(cell, result);
+				syncEditor(cell.querySelector('.nat-inline-editor'), result);
+				// The undone edit must not stay clickable.
+				const stale = cell.querySelector('.nat-undo');
+				if (stale) {
+					stale.remove();
+				}
+			}
+		});
+	}
+
 	function undoBulkEdit(button) {
 		const status = bulkStatus();
 		const changes = JSON.parse(button.dataset.changes);
 		button.disabled = true;
 		let undone = 0;
 		let refused = 0;
+		let next = 0;
 
-		const steps = changes.map(function (change) {
-			return sendUndo(change.auditId, change.nonce)
-				.then(function (result) {
+		function worker() {
+			if (next >= changes.length) {
+				return Promise.resolve();
+			}
+			const change = changes[next];
+			next += 1;
+			return undoOne(change)
+				.then(function () {
 					undone += 1;
-					const cell = document.querySelector(
-						'#post-' +
-							String(change.postId) +
-							' .nat-cell[data-column="' +
-							change.column +
-							'"]'
-					);
-					if (cell) {
-						paintCell(cell, result);
-						syncEditor(
-							cell.querySelector('.nat-inline-editor'),
-							result
-						);
-						// The undone edit must not stay clickable.
-						const stale = cell.querySelector('.nat-undo');
-						if (stale) {
-							stale.remove();
-						}
-					}
 				})
 				.catch(function () {
 					refused += 1;
-				});
-		});
+				})
+				.then(worker);
+		}
 
-		Promise.all(steps).then(function () {
+		const lanes = [];
+		const width = Math.min(UNDO_CONCURRENCY, changes.length);
+		for (let lane = 0; lane < width; lane += 1) {
+			lanes.push(worker());
+		}
+
+		Promise.all(lanes).then(function () {
 			status.textContent =
 				String(undone) + ' undone, ' + String(refused) + ' not undone.';
 			status.classList.toggle('nat-error', refused > 0);
