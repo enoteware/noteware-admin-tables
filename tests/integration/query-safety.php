@@ -330,7 +330,12 @@ $zero_author_query->set('post_type', 'nat_demo_record');
 $GLOBALS['wp_the_query'] = $zero_author_query;
 $GLOBALS['wp_query']     = $zero_author_query;
 $controller->apply($zero_author_query);
-$assert(array(0) === $zero_author_query->get('post__in'), 'Author zero must fail closed instead of broadening results.');
+// Author zero is a real state for an imported or system-generated post, so
+// the filter selects exactly those rows. It must never fall back to the
+// author query variable, where zero means no filter at all.
+$assert(array(0) === $zero_author_query->get('author__in'), 'Author zero must select exactly the records that hold it.');
+$assert('' === $zero_author_query->get('author'), 'Author zero must not reach the query variable that treats it as no filter.');
+$assert(array(0) !== $zero_author_query->get('post__in'), 'A valid author filter must not fail closed.');
 
 $administrator_ids = get_users(array('role' => 'administrator', 'number' => 1, 'fields' => 'ID'));
 $assert(1 === count($administrator_ids), 'Native-filter assertions require one administrator.');
@@ -341,7 +346,8 @@ if ($administrator_ids) {
     $GLOBALS['wp_the_query'] = $valid_author_query;
     $GLOBALS['wp_query']     = $valid_author_query;
     $controller->apply($valid_author_query);
-    $assert((int) $administrator_ids[0] === $valid_author_query->get('author'), 'A positive author ID must use the exact native query variable.');
+    $assert(array((int) $administrator_ids[0]) === $valid_author_query->get('author__in'), 'A positive author ID must use the exact native query variable.');
+    $assert('' === $valid_author_query->get('author'), 'The author filter must use one query variable, not two.');
 }
 
 $_GET = array('nat_filter_nat_test_status' => 'publish');
