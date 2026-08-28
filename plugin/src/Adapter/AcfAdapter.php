@@ -379,9 +379,17 @@ final class AcfAdapter implements EditableFieldAdapter
      */
     private function assertReferenceBeforeWrite(int $postId, ColumnDefinition $column): void
     {
-        $referenceKey = $this->referenceKey($column);
-        if (! metadata_exists('post', $postId, $column->field) && ! metadata_exists('post', $postId, $referenceKey)) {
+        $referenceKey  = $this->referenceKey($column);
+        $hasValue      = metadata_exists('post', $postId, $column->field);
+        $hasReference  = metadata_exists('post', $postId, $referenceKey);
+
+        if (! $hasValue && ! $hasReference) {
             return;
+        }
+        if ($hasValue !== $hasReference) {
+            // One row without the other is not a state this adapter can audit
+            // or restore, because the snapshot records the value alone.
+            throw new RuntimeException('This record stores an inconsistent field reference. Repair the record before editing it here.');
         }
         $reference = get_post_meta($postId, $referenceKey, true);
         if (! is_string($reference) || $reference !== $column->fieldKey) {

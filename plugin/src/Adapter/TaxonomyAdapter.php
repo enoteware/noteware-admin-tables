@@ -80,6 +80,14 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
         if (! current_user_can('edit_post', $postId) || ! current_user_can($taxonomy->cap->assign_terms)) {
             throw new InvalidArgumentException('You do not have permission to change these terms.');
         }
+
+        // The editor holds one term. Saving it on a record that currently has
+        // several would delete the rest, and simply opening the editor and
+        // pressing save would be enough to lose them.
+        $current = $this->read($postId, $column);
+        if ($current->exists && is_array($current->value) && count($current->value) > 1) {
+            throw new InvalidArgumentException('This record has more than one term here, so it cannot be edited from the list. Open the record to change its terms.');
+        }
     }
 
     public function nonceAction(string $operation, int $identifier, ColumnDefinition $column): string
@@ -236,6 +244,12 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
         $this->assign($postId, $column, array());
     }
 
+    /**
+     * Undo re-validates every audited slug against the column as it is now.
+     *
+     * A configured allowlist can change during the undo window, and an undo
+     * that skipped this would restore a term a new edit would refuse.
+     */
     public function restore(int $postId, ColumnDefinition $column, StoredValue $current, StoredValue $target): void
     {
         unset($current);
@@ -245,7 +259,7 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
                 if (! is_string($slug)) {
                     throw new RuntimeException('The audited term list is not valid.');
                 }
-                $slugs[] = $slug;
+                $slugs[] = $this->validateFilterValue($column, $slug);
             }
         }
         $this->assign($postId, $column, $slugs);

@@ -19,6 +19,9 @@ final class ColumnDefinition
 
     private const OPERATORS = array('is', 'empty', 'not_empty');
 
+    /** Sources that resolve their own authoritative choice list at run time. */
+    private const LIVE_CHOICE_SOURCES = array('acf', 'taxonomy');
+
     /** Built-in columns WordPress needs for row actions and bulk selection. */
     public const RESERVED_COLUMNS = array('cb', 'title');
 
@@ -109,7 +112,14 @@ final class ColumnDefinition
         if ('image' === $type && $filterable) {
             throw new InvalidArgumentException('Image columns do not support filtering.');
         }
-        if ('select' === $type && ($filterable || $editable) && ! $choices && 'taxonomy' !== $source) {
+        if (
+            'select' === $type
+            && ($filterable || $editable)
+            && ! $choices
+            && ! in_array($source, self::LIVE_CHOICE_SOURCES, true)
+        ) {
+            // A source with a live choice provider supplies the authoritative
+            // list itself, so duplicating it in configuration is not required.
             throw new InvalidArgumentException('Filterable or editable select columns require at least one configured choice.');
         }
         if ('select' === $type && $filterable && array_key_exists('', $choices)) {

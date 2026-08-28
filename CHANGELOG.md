@@ -23,6 +23,9 @@ All notable changes to this project are documented in this file.
 
 ### Security
 
+- A record holding more than one term in a taxonomy column can no longer be edited from the list screen. The editor carries one term, so opening it and pressing save would have deleted every other term from the record. Undo of a whole term set still works, and a record with one term is still editable.
+- An ACF value row without its reference row, or a reference row without its value row, refuses the edit. The audit snapshot records the value alone, so an undo could not have restored the original pair.
+- Taxonomy undo re-validates every audited slug against the column as it is now.
 - An inline edit and an undo repeat the adapter authorization after acquiring the record lock, matching the bulk path. Until the record is locked, a concurrent request can change its owner or status and the earlier check would stand.
 - A site restriction on an ACF reference key is honoured whether the site registered the key or attached an authorization filter to it. The earlier form checked only for a registration and skipped hook-only policies.
 - Upgrading the audit schema marks rows an earlier version recorded as undo results. Without that, upgrading would offer those rows as undoable and let a user redo the very edit they had already reversed.
@@ -51,6 +54,7 @@ All notable changes to this project are documented in this file.
 - The bulk editor offers a clear option for every column whose adapter supports removal, so a taxonomy or select value can be cleared in bulk instead of only overwritten.
 - A column whose only operator is a presence operator renders that control, with a neutral first option so the initial screen matches an unfiltered list.
 - A native title and slug length limit counts characters rather than bytes, so a title in a script that needs more than one byte per character is no longer rejected well inside the stated limit.
+- A filterable or editable select whose source supplies its own live choices no longer requires those choices to be duplicated in configuration. The rule was rejecting the ACF path the adapter explicitly supports, which could refuse a whole screen.
 - A taxonomy with more terms than the discovery cap keeps its configured allowlist, resolved one slug at a time. That cap limits what can be listed, not what is legal.
 - Metadata undo re-validates the audited value against the column as it is now, so a choice removed during the undo window cannot be written back.
 - A native edit refreshes the cached post after taking the row lock, so the snapshot comparison reads the locked row rather than a copy cached before the lock.

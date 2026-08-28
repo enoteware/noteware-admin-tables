@@ -308,16 +308,27 @@ $term_before = $taxonomy_adapter->read($term_post, $topic_column);
 $assert(array('topic-1', 'topic-2') === $term_before->value, 'A taxonomy column must read a sorted slug list.');
 $assert(str_contains($renderer->value($topic_column, $term_before), 'Topic one'), 'A taxonomy column must display term names.');
 
-$term_result = $edits->processEdit($edit_request($term_post, 'nat_demo_topic', 'topic-3', $term_before->hash()));
-$assert(array('topic-3') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'A taxonomy edit must replace the term set.');
-$edits->processUndo(
-    array(
-        'audit_id' => (string) $term_result['auditId'],
-        'nonce'    => (string) $term_result['undoNonce'],
-    )
+// restore() can put a whole term set back, which is what an undo of a bulk or
+// programmatic change needs. It is exercised through the adapter, because the
+// list screen refuses to edit a record that holds more than one term.
+$taxonomy_adapter->restore(
+    $term_post,
+    $topic_column,
+    $taxonomy_adapter->read($term_post, $topic_column),
+    new Noteware\AdminTables\Model\StoredValue(true, array('topic-1', 'topic-3'))
 );
-$assert(array('topic-1', 'topic-2') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'Undo must restore every previously assigned term.');
+$assert(array('topic-1', 'topic-3') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'Restoring a term set must assign every slug in it.');
+$taxonomy_adapter->restore(
+    $term_post,
+    $topic_column,
+    $taxonomy_adapter->read($term_post, $topic_column),
+    new Noteware\AdminTables\Model\StoredValue(true, array('topic-1', 'topic-2'))
+);
+$assert(array('topic-1', 'topic-2') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'Restoring must put the original term set back.');
 
+// A single term record is editable, cleared, and restored through the endpoint.
+wp_set_object_terms($term_post, array('topic-1'), 'nat_demo_topic', false);
+clean_object_term_cache($term_post, 'nat_demo_topic');
 $term_state = $taxonomy_adapter->read($term_post, $topic_column);
 $expect_failure(
     static fn (): array => $edits->processEdit($edit_request($term_post, 'nat_demo_topic', 'topic-missing', $term_state->hash())),
@@ -332,7 +343,7 @@ $edits->processUndo(
         'nonce'    => (string) $clear_result['undoNonce'],
     )
 );
-$assert(array('topic-1', 'topic-2') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'Undoing a clear must restore every term.');
+$assert(array('topic-1') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'Undoing a clear must restore the term.');
 
 // Undo must refuse to recreate a term that no longer exists.
 $disposable = wp_insert_term('Disposable topic', 'nat_demo_topic', array('slug' => 'topic-disposable'));
@@ -352,6 +363,51 @@ if (! is_wp_error($disposable)) {
     $assert(array('topic-1') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'A refused undo must leave the current terms in place.');
     wp_set_object_terms($term_post, array('topic-1', 'topic-2'), 'nat_demo_topic', false);
     clean_object_term_cache($term_post, 'nat_demo_topic');
+}
+
+// A record holding more than one term must not be editable from the list,
+// because the editor carries one term and saving it would delete the rest.
+wp_set_object_terms($term_post, array('topic-1', 'topic-2'), 'nat_demo_topic', false);
+clean_object_term_cache($term_post, 'nat_demo_topic');
+$expect_failure(
+    static function () use ($taxonomy_adapter, $term_post, $topic_column): void {
+        $taxonomy_adapter->authorize($term_post, $topic_column);
+    },
+    'A record with several terms must not be editable from the list screen.'
+);
+$multi_before = $taxonomy_adapter->read($term_post, $topic_column);
+$expect_failure(
+    static fn (): array => $edits->processEdit($edit_request($term_post, 'nat_demo_topic', 'topic-3', $multi_before->hash())),
+    'A multiple term record must refuse a single term write.'
+);
+$assert(array('topic-1', 'topic-2') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'A refused term write must leave every term in place.');
+
+// A single term record stays editable.
+wp_set_object_terms($term_post, array('topic-1'), 'nat_demo_topic', false);
+clean_object_term_cache($term_post, 'nat_demo_topic');
+$single_state  = $taxonomy_adapter->read($term_post, $topic_column);
+$single_result = $edits->processEdit($edit_request($term_post, 'nat_demo_topic', 'topic-2', $single_state->hash()));
+$assert(array('topic-2') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'A single term record must still be editable.');
+$edits->processUndo(array('audit_id' => (string) $single_result['auditId'], 'nonce' => (string) $single_result['undoNonce']));
+$assert(array('topic-1') === $taxonomy_adapter->read($term_post, $topic_column)->value, 'Undo must restore the single term.');
+wp_set_object_terms($term_post, array('topic-1', 'topic-2'), 'nat_demo_topic', false);
+clean_object_term_cache($term_post, 'nat_demo_topic');
+
+// An ACF value row without its reference row must refuse the edit.
+$orphan_post = $fixture_post(27);
+if ($orphan_post > 0) {
+    $orphan_value     = get_post_meta($orphan_post, 'nat_demo_link', true);
+    $orphan_reference = get_post_meta($orphan_post, '_nat_demo_link', true);
+    if (metadata_exists('post', $orphan_post, 'nat_demo_link')) {
+        delete_post_meta($orphan_post, 'nat_demo_link');
+        $orphan_state = $acf_adapter->read($orphan_post, $link_column);
+        $expect_failure(
+            static fn (): array => $edits->processEdit($edit_request($orphan_post, 'nat_demo_link', 'https://example.test/apply/orphan', $orphan_state->hash())),
+            'A reference row without its value row must refuse the edit.'
+        );
+        update_post_meta($orphan_post, 'nat_demo_link', $orphan_value);
+        update_post_meta($orphan_post, '_nat_demo_link', $orphan_reference);
+    }
 }
 
 // A taxonomy that belongs to another post type must fail closed.
