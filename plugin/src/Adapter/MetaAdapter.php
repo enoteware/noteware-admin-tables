@@ -119,13 +119,25 @@ final class MetaAdapter implements EditableFieldAdapter
         }
     }
 
+    /**
+     * Undo re-validates the audited value against the column as it is now.
+     *
+     * A configured choice list can change during the undo window, and an undo
+     * that skipped this would write back a value the column no longer allows.
+     */
     public function restore(int $postId, ColumnDefinition $column, StoredValue $current, StoredValue $target): void
     {
-        if ($target->exists) {
-            $this->write($postId, $column, $target->value, $current);
+        if (! $target->exists) {
+            $this->remove($postId, $column, $current);
             return;
         }
-        $this->remove($postId, $column, $current);
+
+        $validated = $this->validate($column, $target->value);
+        if ($validated !== $target->value) {
+            throw new RuntimeException('The audited value is no longer valid for this column, so the undo was refused.');
+        }
+
+        $this->write($postId, $column, $validated, $current);
     }
 
     public function auditDescriptor(ColumnDefinition $column): array

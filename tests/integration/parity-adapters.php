@@ -613,6 +613,32 @@ $expect_failure(
     'A value longer than the live field allows must be rejected.'
 );
 
+// Metadata undo must refuse a value the column no longer allows.
+$choice_meta_column = static fn (array $choices): Noteware\AdminTables\Model\ColumnDefinition =>
+    Noteware\AdminTables\Model\ColumnDefinition::fromArray(
+        array(
+            'key'      => 'nat_test_meta_choice',
+            'label'    => 'Meta choice',
+            'source'   => 'meta',
+            'type'     => 'select',
+            'field'    => 'nat_test_meta_choice',
+            'editable' => true,
+            'choices'  => $choices,
+        )
+    );
+$meta_adapter = $adapters->get('meta');
+$expect_failure(
+    static function () use ($meta_adapter, $choice_meta_column, $native_post): void {
+        $meta_adapter->restore(
+            $native_post,
+            $choice_meta_column(array('alpha' => 'Alpha')),
+            new Noteware\AdminTables\Model\StoredValue(true, 'alpha'),
+            new Noteware\AdminTables\Model\StoredValue(true, 'retired')
+        );
+    },
+    'Metadata undo must refuse a value the column no longer allows.'
+);
+
 WP_CLI::line('NAT_PARITY_STAGE=adapters');
 
 // --- Column order, removal, replacement, and widths --------------------------

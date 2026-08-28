@@ -153,7 +153,7 @@ final class AcfAdapter implements EditableFieldAdapter
         // update_field() writes past the length rule ACF applies on its own
         // form, so the field's own limit is enforced here.
         $maxLength = $this->maxLength($column);
-        if (null !== $maxLength && mb_strlen($validated) > $maxLength) {
+        if (null !== $maxLength && $this->characters($validated) > $maxLength) {
             throw new InvalidArgumentException('This value is longer than the field allows.');
         }
 
@@ -230,6 +230,21 @@ final class AcfAdapter implements EditableFieldAdapter
             return false;
         }
         return $this->requiredCache[$this->cacheKey($column)] ?? false;
+    }
+
+    /**
+     * Count characters without depending on an optional extension.
+     *
+     * mbstring is not guaranteed on a supported PHP 8.1 host, and a missing
+     * function here would turn a length rule into a fatal error on every write.
+     */
+    private function characters(string $value): int
+    {
+        if (function_exists('mb_strlen')) {
+            return (int) mb_strlen($value, 'UTF-8');
+        }
+        $decoded = preg_match_all('/./us', $value);
+        return false === $decoded ? strlen($value) : $decoded;
     }
 
     /** The live field's own length limit, when it defines one. */

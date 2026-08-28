@@ -125,6 +125,11 @@ final class NativeAdapter implements EditableFieldAdapter
         if (1 !== $postLock) {
             throw new RuntimeException('The post could not be locked for editing.');
         }
+
+        // The row is only pinned now. Anything cached before the lock may be
+        // older than the row, and the snapshot comparison has to see the row.
+        clean_post_cache($postId);
+
         if ('featured_image' !== $column->field) {
             return;
         }

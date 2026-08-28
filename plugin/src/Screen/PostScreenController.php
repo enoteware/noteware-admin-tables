@@ -446,15 +446,22 @@ final class PostScreenController
             return array();
         }
 
-        $adapter = $this->adapters->get($column->source);
-        $live    = array();
+        $adapter     = $this->adapters->get($column->source);
+        $live        = array();
+        $authoritative = false;
         if ($adapter instanceof \Noteware\AdminTables\Contract\FilterableFieldAdapter) {
-            $live = $adapter->filterChoices($column);
+            $live          = $adapter->filterChoices($column);
+            $authoritative = true;
         } elseif ($adapter instanceof \Noteware\AdminTables\Adapter\AcfAdapter) {
-            $live = $adapter->choices($column);
+            $live          = $adapter->choices($column);
+            $authoritative = $adapter->supports($column);
         }
+
         if (! $live) {
-            return $column->choices;
+            // An adapter that speaks for this column and reports no choice has
+            // said there is no legal value. Falling back to the configured list
+            // would advertise options every save rejects.
+            return $authoritative ? array() : $column->choices;
         }
         if (! $column->choices) {
             return $live;
