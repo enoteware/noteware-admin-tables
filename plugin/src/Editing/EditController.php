@@ -86,10 +86,17 @@ final class EditController
         }
         $adapter->authorize($postId, $column);
         $remove = '1' === $this->requestValue($request, 'remove', true);
+        if ($remove && ! $adapter->supportsRemoval($column)) {
+            throw new InvalidArgumentException('This field cannot be cleared.');
+        }
 
-        $this->audit->begin();
+        $this->audit->begin($adapter->transactionalTables($column));
         try {
             $adapter->lock($postId, $column);
+            // The record is only pinned once it is locked. Another request can
+            // change its owner or status between the check above and the lock,
+            // so authorization runs again against freshly read state.
+            $adapter->authorize($postId, $column);
             $before = $adapter->read($postId, $column);
             if (! preg_match('/^[a-f0-9]{64}$/', $snapshot) || ! hash_equals($before->hash(), $snapshot)) {
                 throw new InvalidArgumentException('The value changed after this editor opened. Refresh the page and try again.');
@@ -110,12 +117,13 @@ final class EditController
 
         return array(
             'text'       => $this->renderer->text($column, $after),
+            'html'       => $this->renderer->safeValue($column, $after),
             'auditId'    => $auditId,
             'undoNonce'  => wp_create_nonce($adapter->nonceAction('undo', $auditId, $column)),
             'undoLabel'  => __('Undo', 'noteware-admin-tables'),
             'savedLabel' => __('Saved.', 'noteware-admin-tables'),
             'snapshot'   => $after->hash(),
-            'value'      => $this->editableValue($after),
+            'value'      => $this->renderer->editableValue($after),
             'exists'     => $after->exists,
         );
     }
@@ -138,6 +146,16 @@ final class EditController
         if (! $row || ! empty($row['undone_at'])) {
             throw new InvalidArgumentException('This edit cannot be undone.');
         }
+        if (! empty($row['is_undo'])) {
+            throw new InvalidArgumentException('An undo cannot itself be undone.');
+        }
+        // The endpoint enforces the same deadline the control advertises. A
+        // nonce stays valid longer than the undo window, so a page left open
+        // must not become a way to undo an edit after the deadline.
+        $createdAt = strtotime((string) ($row['created_at'] ?? '') . ' UTC');
+        if (false === $createdAt || (time() - $createdAt) > AuditRepository::UNDO_WINDOW_SECONDS) {
+            throw new InvalidArgumentException('This edit is too old to undo here. Change the value directly instead.');
+        }
 
         $postId   = (int) $row['post_id'];
         $postType = get_post_type($postId);
@@ -159,16 +177,17 @@ final class EditController
         $expected = $this->decodeStored((string) $row['after_value']);
         $target   = $this->decodeStored((string) $row['before_value']);
 
-        $this->audit->begin();
+        $this->audit->begin($adapter->transactionalTables($column));
         try {
             $adapter->lock($postId, $column);
+            $adapter->authorize($postId, $column);
             $current = $adapter->read($postId, $column);
             if (! $current->equals($expected)) {
                 throw new InvalidArgumentException('The value changed after this edit. Undo stopped to protect the newer value.');
             }
             $adapter->restore($postId, $column, $current, $target);
             $restored    = $adapter->read($postId, $column);
-            $undoAuditId = $this->audit->record($postId, $postType, $adapter->auditDescriptor($column), $current, $restored);
+            $undoAuditId = $this->audit->record($postId, $postType, $adapter->auditDescriptor($column), $current, $restored, true);
             if (! $this->audit->markUndone($auditId, $undoAuditId)) {
                 throw new InvalidArgumentException('This edit was already undone.');
             }
@@ -179,9 +198,10 @@ final class EditController
 
         return array(
             'text'     => $this->renderer->text($column, $restored),
+            'html'     => $this->renderer->safeValue($column, $restored),
             'message'  => __('Edit undone.', 'noteware-admin-tables'),
             'snapshot' => $restored->hash(),
-            'value'    => $this->editableValue($restored),
+            'value'    => $this->renderer->editableValue($restored),
             'exists'   => $restored->exists,
         );
     }
@@ -224,11 +244,6 @@ final class EditController
         return new StoredValue((bool) $decoded['exists'], $decoded['value']);
     }
 
-    private function editableValue(StoredValue $stored): string
-    {
-        return $stored->exists && is_scalar($stored->value) ? (string) $stored->value : '';
-    }
-
     private function safeError(Throwable $error): string
     {
         if ($error instanceof InvalidArgumentException || $error instanceof RuntimeException) {
@@ -245,7 +260,11 @@ final class EditController
         } catch (Throwable $error) {
             $rollback = $error;
         } finally {
+            // A failed write may already have primed the metadata, post, or
+            // term caches, so every one of them is dropped before rethrowing.
             wp_cache_delete($postId, 'post_meta');
+            clean_post_cache($postId);
+            clean_object_term_cache($postId, (string) get_post_type($postId));
         }
         if ($rollback) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- The previous exception is chained, not rendered.

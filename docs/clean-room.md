@@ -16,6 +16,7 @@ Noteware Admin Tables is original GPL-2.0-or-later code. Contributors implement 
 - Proprietary assets, icons, screenshots, layouts, text, names, or visual trade dress.
 - Private field keys, client names, production URLs, credentials, database exports, or real user data.
 - Copied documentation or examples from a competing product.
+- The name of a client, a client field, a client host, or a competing product, including in a scanner, a comment, a test, or a branch description.
 - Behavior inferred by bypassing access controls or license checks.
 
 ## Contribution record
@@ -28,9 +29,17 @@ Each pull request states:
 4. No private or licensed material is present.
 5. New dependency licenses were checked.
 
-Reviewers inspect the diff and run the repository clean-room, secret, and dependency checks. A scan supports human review. It does not replace it.
+Reviewers inspect the diff and run the repository secret, example-domain, punctuation, and dependency checks. A scan supports human review. It does not replace it.
 
-## Public API references for the first milestone
+## Why this repository does not name what it prohibits
+
+`scripts/clean-room-check.sh` looks for secret shapes, real email addresses, and tracked environment files. It deliberately does not list client names, client field names, client host names, or competing product names.
+
+Writing those names into a scanner would put them in this public repository, which is exactly the disclosure the rule exists to prevent. Splitting a name into concatenated string parts does not help, because the parts sit next to each other and reassemble on sight.
+
+That scan belongs to the private site repository that already knows those names. Its continuous integration scans the vendored copy of this plugin for them before anything is deployed, and it can scan a checkout of this repository the same way before a public merge is approved.
+
+## Public API references
 
 WordPress:
 
@@ -42,10 +51,24 @@ WordPress:
 - https://developer.wordpress.org/reference/functions/current_user_can/
 - https://developer.wordpress.org/reference/functions/check_ajax_referer/
 - https://developer.wordpress.org/reference/functions/dbdelta/
+- https://developer.wordpress.org/reference/functions/wp_update_post/
+- https://developer.wordpress.org/reference/functions/set_post_thumbnail/
+- https://developer.wordpress.org/reference/functions/delete_post_thumbnail/
+- https://developer.wordpress.org/reference/functions/wp_set_object_terms/
+- https://developer.wordpress.org/reference/functions/get_the_terms/
+- https://developer.wordpress.org/reference/functions/get_terms/
+- https://developer.wordpress.org/reference/classes/wp_tax_query/
+- https://developer.wordpress.org/reference/functions/update_object_term_cache/
+- https://developer.wordpress.org/reference/functions/esc_url_raw/
+- https://developer.wordpress.org/reference/functions/wp_parse_url/
+- https://developer.wordpress.org/reference/hooks/manage_posts_extra_tablenav/
 
 ACF:
 
 - https://www.advancedcustomfields.com/resources/get_field/
 - https://www.advancedcustomfields.com/resources/get_field_object/
+- https://www.advancedcustomfields.com/resources/update_field/
+- https://www.advancedcustomfields.com/resources/delete_field/
+- https://www.advancedcustomfields.com/resources/url/
 
 These links identify API contracts. No prose, assets, or code are copied into the plugin from them.

@@ -14,6 +14,8 @@ use Noteware\AdminTables\Model\ColumnDefinition;
 
 final class ValueValidator
 {
+    private const MAX_URL_LENGTH = 2000;
+
     public static function validate(ColumnDefinition $column, mixed $raw): string
     {
         if (! is_string($raw) || strlen($raw) > 10000) {
@@ -26,6 +28,7 @@ final class ValueValidator
             'boolean' => self::boolean($raw),
             'select'  => self::choice($column, $raw),
             'date'    => self::date($raw),
+            'url'     => self::url($raw),
             default   => throw new InvalidArgumentException('This field type is not editable.'),
         };
     }
@@ -66,6 +69,45 @@ final class ValueValidator
         if (! $date || $date->format('Y-m-d') !== $raw) {
             throw new InvalidArgumentException('Enter a date in YYYY-MM-DD format.');
         }
+        return $raw;
+    }
+
+    /**
+     * Validate a link without changing it.
+     *
+     * An empty string is a meaningful stored state and stays empty. Any other
+     * value must already be a safe absolute HTTP or HTTPS link that WordPress
+     * would not rewrite, so a saved link is always the exact link that was
+     * reviewed.
+     */
+    private static function url(string $raw): string
+    {
+        if ('' === $raw) {
+            return '';
+        }
+        if (strlen($raw) > self::MAX_URL_LENGTH) {
+            throw new InvalidArgumentException('Enter a link with no more than 2000 characters.');
+        }
+        if (preg_match('/[\x00-\x20\x7F]/', $raw)) {
+            throw new InvalidArgumentException('Links cannot contain spaces or control characters.');
+        }
+
+        $parts = wp_parse_url($raw);
+        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
+            throw new InvalidArgumentException('Enter a full link that starts with http:// or https://.');
+        }
+        if (! in_array(strtolower((string) $parts['scheme']), array('http', 'https'), true)) {
+            throw new InvalidArgumentException('Only http and https links are allowed.');
+        }
+        if ('' === (string) $parts['host']) {
+            throw new InvalidArgumentException('Enter a full link that includes a site address.');
+        }
+
+        $safe = esc_url_raw($raw, array('http', 'https'));
+        if ('' === $safe || $safe !== $raw) {
+            throw new InvalidArgumentException('That link contains characters WordPress would rewrite. Paste the exact final link.');
+        }
+
         return $raw;
     }
 }

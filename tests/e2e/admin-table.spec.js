@@ -86,7 +86,7 @@ test.describe('generic admin-table vertical slice', () => {
 		const edit = cell.getByRole('button', { name: 'Edit' });
 
 		await edit.click();
-		const input = cell.locator('input[name="value"]');
+		const input = cell.locator('[data-field="value"]');
 		await expect(input).toBeFocused();
 		await page.screenshot({
 			path: 'tests/artifacts/admin-table-editor-open.png',
@@ -127,7 +127,7 @@ test.describe('generic admin-table vertical slice', () => {
 		});
 
 		await edit.click();
-		await cell.locator('input[name="nonce"]').evaluate((field) => {
+		await cell.locator('[data-field="nonce"]').evaluate((field) => {
 			field.value = 'invalid';
 		});
 		await input.fill('Rejected value');
@@ -191,11 +191,11 @@ test.describe('generic admin-table vertical slice', () => {
 			.locator('.nat-cell[data-column="nat_demo_note"]')
 			.first();
 		await cell.getByRole('button', { name: 'Edit' }).click();
-		await cell.locator('input[name="nonce"]').evaluate((field) => {
+		await cell.locator('[data-field="nonce"]').evaluate((field) => {
 			field.value = 'invalid';
 		});
 		await cell
-			.locator('input[name="value"]')
+			.locator('[data-field="value"]')
 			.fill('Rejected contrast value');
 		await cell.getByRole('button', { name: 'Save' }).click();
 		await expect(cell.locator('.nat-error')).toBeVisible();

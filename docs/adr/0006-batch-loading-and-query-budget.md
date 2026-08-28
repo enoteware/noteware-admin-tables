@@ -39,3 +39,12 @@ The sandbox provides an idempotent 10,000-record fixture. Performance checks com
 - [WordPress `get_posts()` reference](https://developer.wordpress.org/reference/functions/get_posts/)
 - [WordPress `wp_get_attachment_image()` reference](https://developer.wordpress.org/reference/functions/wp_get_attachment_image/)
 - [WordPress `WP_Query` reference](https://developer.wordpress.org/reference/classes/wp_query/)
+
+## Amendment, 2026-08-27: term and audit preloading
+
+Two page-scoped preloads join the existing metadata and attachment preloads.
+
+- When a screen configures a taxonomy column, the page primes the object term cache for every rendered record in one call.
+- When the screen can offer undo, the page reads its undoable audit rows in one bounded query keyed by the rendered record ids and the current user.
+
+Both are constant for the page, so the measured budget still shows zero query growth between a 20-row and a 100-row page against the 10,000-record fixture. The featured-image preload reuses the existing bounded attachment load by reading `_thumbnail_id` from the primed metadata cache.

@@ -39,3 +39,15 @@ The PHP array shape is the first schema. The first milestone does not save site 
 - [WordPress `add_filter()` reference](https://developer.wordpress.org/reference/functions/add_filter/)
 - [WordPress `apply_filters()` reference](https://developer.wordpress.org/reference/functions/apply_filters/)
 - [WordPress must-use plugin documentation](https://developer.wordpress.org/advanced-administration/plugins/mu-plugins/)
+
+## Amendment, 2026-08-27: screen ordering, removal, replacement, and widths
+
+A screen may now declare `order` and `remove` beside `columns`, and a column may declare `replaces` and `width`.
+
+`order` names final WordPress column ids. Any column the list does not name keeps its relative position after the ordered ones, so a new WordPress column is never silently dropped. `remove` hides built-in columns only; a plugin column is removed by leaving it out of `columns`. The bulk action checkbox column cannot be removed or replaced, which keeps WordPress bulk actions, search, pagination, and screen options working.
+
+`width` is a bounded CSS length rendered as a screen-scoped rule for that column. It is presentation configuration owned by the site, so it stays out of the plugin. Percentage widths together may claim no more than 75 percent of the table, because WordPress still renders its own checkbox and title columns and a configuration that claims everything starves them.
+
+`min_width` is a screen-level pixel length. A screen with many columns squeezes every column until its text wraps one character per line, which is unusable. A screen that sets `min_width` keeps its columns readable and scrolls sideways instead.
+
+Every one of these options is validated with the rest of the configuration. An order entry naming a plugin column that is not configured, a duplicate entry, a malformed column id, or a column that is both ordered and removed is rejected.

@@ -7,6 +7,7 @@
  */
 
 use Noteware\AdminTables\Adapter\AcfAdapter;
+use Noteware\AdminTables\Adapter\TaxonomyAdapter;
 use Noteware\AdminTables\Adapter\AdapterRegistry;
 use Noteware\AdminTables\Adapter\MetaAdapter;
 use Noteware\AdminTables\Adapter\NativeAdapter;
@@ -123,7 +124,7 @@ add_filter(
 );
 
 $configuration = new Configuration();
-$adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter()));
+$adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter(), new TaxonomyAdapter()));
 $audit         = new AuditRepository();
 $controller    = new EditController($configuration, $adapters, $audit);
 $note_column   = $configuration->column('nat_demo_record', 'nat_demo_note');

@@ -40,6 +40,15 @@ final class MetaAdapter implements EditableFieldAdapter
         if (! current_user_can('edit_post', $postId) || ! current_user_can('edit_post_meta', $postId, $column->field)) {
             throw new InvalidArgumentException('You do not have permission to edit this field.');
         }
+
+        // This adapter writes and validates scalars. A key that already holds
+        // an array or an object could be overwritten here, but the undo would
+        // then refuse to restore the snapshot, so the old value would be gone
+        // for good. Refusing the edit keeps the value recoverable.
+        $current = $this->read($postId, $column);
+        if ($current->exists && null !== $current->value && ! is_scalar($current->value)) {
+            throw new InvalidArgumentException('This record stores a value this list cannot edit. Open the record to change it.');
+        }
     }
 
     public function nonceAction(string $operation, int $identifier, ColumnDefinition $column): string
@@ -103,6 +112,12 @@ final class MetaAdapter implements EditableFieldAdapter
         }
     }
 
+    public function supportsRemoval(ColumnDefinition $column): bool
+    {
+        unset($column);
+        return true;
+    }
+
     public function remove(int $postId, ColumnDefinition $column, StoredValue $expected): void
     {
         if (! $expected->exists) {
@@ -113,13 +128,25 @@ final class MetaAdapter implements EditableFieldAdapter
         }
     }
 
+    /**
+     * Undo re-validates the audited value against the column as it is now.
+     *
+     * A configured choice list can change during the undo window, and an undo
+     * that skipped this would write back a value the column no longer allows.
+     */
     public function restore(int $postId, ColumnDefinition $column, StoredValue $current, StoredValue $target): void
     {
-        if ($target->exists) {
-            $this->write($postId, $column, $target->value, $current);
+        if (! $target->exists) {
+            $this->remove($postId, $column, $current);
             return;
         }
-        $this->remove($postId, $column, $current);
+
+        $validated = $this->validate($column, $target->value);
+        if ($validated !== $target->value) {
+            throw new RuntimeException('The audited value is no longer valid for this column, so the undo was refused.');
+        }
+
+        $this->write($postId, $column, $validated, $current);
     }
 
     public function auditDescriptor(ColumnDefinition $column): array
@@ -129,5 +156,12 @@ final class MetaAdapter implements EditableFieldAdapter
             'source'     => $this->source(),
             'field_name' => $column->field,
         );
+    }
+
+    public function transactionalTables(ColumnDefinition $column): array
+    {
+        unset($column);
+        global $wpdb;
+        return array($wpdb->posts, $wpdb->postmeta);
     }
 }

@@ -8,5 +8,6 @@ These records define the first review milestone's stable boundaries.
 4. [External site configuration](0004-external-site-configuration.md)
 5. [Append-only audit and conditional undo](0005-append-only-audit-and-conditional-undo.md)
 6. [Batch loading and query budget](0006-batch-loading-and-query-budget.md)
+7. [Bulk editing boundaries](0007-bulk-editing-boundaries.md)
 
 Add a new record when an implementation changes one of these boundaries. Do not rewrite an accepted record to hide a later decision. Supersede it with a new record.

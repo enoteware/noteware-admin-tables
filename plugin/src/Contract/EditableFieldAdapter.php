@@ -26,10 +26,23 @@ interface EditableFieldAdapter extends FieldAdapter
 
     public function write(int $postId, ColumnDefinition $column, mixed $value, StoredValue $expected): void;
 
+    /** Whether this column allows an operator to clear the stored value. */
+    public function supportsRemoval(ColumnDefinition $column): bool;
+
     public function remove(int $postId, ColumnDefinition $column, StoredValue $expected): void;
 
     public function restore(int $postId, ColumnDefinition $column, StoredValue $current, StoredValue $target): void;
 
     /** @return array{column_key: string, source: string, field_name: string} */
     public function auditDescriptor(ColumnDefinition $column): array;
+
+    /**
+     * Every database table this adapter writes inside the edit transaction.
+     *
+     * A write is refused unless all of them use a transaction engine, so a
+     * rollback can never leave part of a change behind.
+     *
+     * @return list<string>
+     */
+    public function transactionalTables(ColumnDefinition $column): array;
 }

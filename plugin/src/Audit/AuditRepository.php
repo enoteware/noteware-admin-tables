@@ -14,9 +14,22 @@ use Noteware\AdminTables\Model\StoredValue;
 
 final class AuditRepository
 {
-    private const SCHEMA_VERSION = '2';
+    private const SCHEMA_VERSION = '3';
 
-    private bool $transactionalTablesVerified = false;
+    /** How long a completed edit stays undoable. */
+    public const UNDO_WINDOW_SECONDS = 86400;
+
+    /** The configuration cap on columns per screen. */
+    private const MAX_COLUMNS_PER_SCREEN = 100;
+
+    /** A hard ceiling for the page-scoped undo lookup. */
+    private const MAX_UNDO_ROWS = 2000;
+
+    /** @var array<string, bool> */
+    private array $transactionalTablesVerified = array();
+
+    /** @var array<string, int> */
+    private array $undoIndex = array();
 
     public function maybeInstall(): void
     {
@@ -47,18 +60,23 @@ final class AuditRepository
             undone_at datetime NULL,
             undone_by bigint(20) unsigned NULL,
             undo_audit_id bigint(20) unsigned NULL,
+            is_undo tinyint(1) unsigned NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
             KEY post_column (post_id, column_key),
             KEY created_at (created_at)
         ) ENGINE=InnoDB {$charset};", $this->table());
         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         dbDelta($sql);
-        $this->assertTransactionalTables();
+        $this->assertTransactionalTables(array());
+        $this->markLegacyUndoRows();
         update_option('nat_audit_schema_version', self::SCHEMA_VERSION, false);
     }
 
-    /** @param array{column_key: string, source: string, field_name: string} $descriptor Trusted adapter identifiers. */
-    public function record(int $postId, string $postType, array $descriptor, StoredValue $before, StoredValue $after): int
+    /**
+     * @param array{column_key: string, source: string, field_name: string} $descriptor Trusted adapter identifiers.
+     * @param bool                                                          $isUndo     Whether this row records an undo.
+     */
+    public function record(int $postId, string $postType, array $descriptor, StoredValue $before, StoredValue $after, bool $isUndo = false): int
     {
         global $wpdb;
         $inserted = $wpdb->insert(
@@ -73,13 +91,88 @@ final class AuditRepository
                 'after_value'  => wp_json_encode($after->toArray(), JSON_UNESCAPED_SLASHES),
                 'user_id'      => get_current_user_id(),
                 'created_at'   => current_time('mysql', true),
+                'is_undo'      => $isUndo ? 1 : 0,
             ),
-            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s')
+            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d')
         );
         if (false === $inserted) {
             throw new RuntimeException('The audit record could not be stored.');
         }
         return (int) $wpdb->insert_id;
+    }
+
+    /**
+     * Mark rows that an earlier schema recorded as undo results.
+     *
+     * Before the is_undo column existed, an undo looked exactly like an
+     * ordinary edit. Left alone, upgrading would offer those rows as undoable
+     * and let a user redo the very edit they had already reversed.
+     */
+    private function markLegacyUndoRows(): void
+    {
+        global $wpdb;
+        $wpdb->query(
+            $wpdb->prepare(
+                'UPDATE %i SET is_undo = 1
+                 WHERE is_undo = 0
+                   AND id IN (SELECT undo_audit_id FROM (SELECT undo_audit_id FROM %i WHERE undo_audit_id IS NOT NULL) AS referenced)',
+                $this->table(),
+                $this->table()
+            )
+        );
+    }
+
+    /**
+     * Load every still-undoable edit this user made on one page of records.
+     *
+     * This runs once per list screen so the undo control never costs a query
+     * per rendered row.
+     *
+     * @param list<int> $postIds Page-scoped post IDs.
+     */
+    public function preloadUndoable(array $postIds, int $userId): void
+    {
+        $this->undoIndex = array();
+        if (! $postIds || $userId < 1) {
+            return;
+        }
+
+        global $wpdb;
+        $placeholders = implode(', ', array_fill(0, count($postIds), '%d'));
+        $since        = gmdate('Y-m-d H:i:s', time() - self::UNDO_WINDOW_SECONDS);
+        // Group in the database so the result holds exactly one row per cell.
+        // Limiting raw rows instead would let repeated edits of one cell push
+        // another cell's newest edit out of the result.
+        $limit = min(self::MAX_UNDO_ROWS, count($postIds) * self::MAX_COLUMNS_PER_SCREEN);
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The placeholder list is generated from a counted array of integers.
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT MAX(id) AS id, post_id, column_key FROM %i
+                 WHERE post_id IN ({$placeholders})
+                   AND user_id = %d
+                   AND undone_at IS NULL
+                   AND is_undo = 0
+                   AND created_at >= %s
+                 GROUP BY post_id, column_key
+                 LIMIT %d",
+                array_merge(array($this->table()), $postIds, array($userId, $since, $limit))
+            ),
+            ARRAY_A
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+        foreach ((array) $rows as $row) {
+            if (! is_array($row) || ! isset($row['id'], $row['post_id'], $row['column_key'])) {
+                continue;
+            }
+            $this->undoIndex[$row['post_id'] . ':' . $row['column_key']] = (int) $row['id'];
+        }
+    }
+
+    /** The most recent undoable edit id for one cell, if the page preloaded one. */
+    public function undoableId(int $postId, string $columnKey): ?int
+    {
+        return $this->undoIndex[$postId . ':' . $columnKey] ?? null;
     }
 
     /** @return array<string, mixed>|null */
@@ -109,10 +202,13 @@ final class AuditRepository
         return 1 === $updated;
     }
 
-    public function begin(): void
+    /**
+     * @param list<string> $tables Extra tables this edit will write.
+     */
+    public function begin(array $tables = array()): void
     {
         global $wpdb;
-        $this->assertTransactionalTables();
+        $this->assertTransactionalTables($tables);
         if (false === $wpdb->query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE')) {
             throw new RuntimeException('The edit transaction isolation level could not be set.');
         }
@@ -143,30 +239,45 @@ final class AuditRepository
         return $wpdb->prefix . 'nat_edit_audit';
     }
 
-    private function assertTransactionalTables(): void
+    /**
+     * Every table an edit writes must use a transaction engine.
+     *
+     * The adapter names the tables its own write touches, so a taxonomy or
+     * native write is checked as strictly as a metadata write.
+     *
+     * @param list<string> $tables Extra tables this edit will write.
+     */
+    private function assertTransactionalTables(array $tables): void
     {
-        if ($this->transactionalTablesVerified) {
+        global $wpdb;
+
+        $required = array_values(array_unique(array_merge(array($wpdb->postmeta, $this->table()), $tables)));
+        $pending  = array_values(array_filter($required, fn (string $table): bool => ! ($this->transactionalTablesVerified[$table] ?? false)));
+        if (! $pending) {
             return;
         }
 
-        global $wpdb;
+        $placeholders = implode(', ', array_fill(0, count($pending), '%s'));
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The placeholder list is generated from a counted array of table names.
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (%s, %s)',
-                $wpdb->postmeta,
-                $this->table()
+                "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ({$placeholders})",
+                $pending
             ),
             ARRAY_A
         );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $engines = array();
-        foreach ($rows as $row) {
-            if (isset($row['TABLE_NAME'], $row['ENGINE'])) {
+        foreach ((array) $rows as $row) {
+            if (is_array($row) && isset($row['TABLE_NAME'], $row['ENGINE'])) {
                 $engines[(string) $row['TABLE_NAME']] = strtoupper((string) $row['ENGINE']);
             }
         }
-        if ('INNODB' !== ($engines[$wpdb->postmeta] ?? '') || 'INNODB' !== ($engines[$this->table()] ?? '')) {
-            throw new RuntimeException('Editable metadata and audit storage must use the InnoDB transaction engine.');
+        foreach ($pending as $table) {
+            if ('INNODB' !== ($engines[$table] ?? '')) {
+                throw new RuntimeException('Every table an edit writes must use the InnoDB transaction engine.');
+            }
+            $this->transactionalTablesVerified[$table] = true;
         }
-        $this->transactionalTablesVerified = true;
     }
 }

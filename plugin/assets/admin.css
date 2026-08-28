@@ -1,5 +1,13 @@
 .nat-cell {
-    min-width: 9rem;
+    /* Stay inside the table cell so a wide screen never paints one column over another. */
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* A control that cannot shrink further stays reachable instead of being clipped. */
+.wp-list-table .column-primary .nat-cell,
+.wp-list-table td .nat-cell {
+    overflow-x: auto;
 }
 
 .nat-thumbnail {
@@ -20,8 +28,12 @@
     justify-content: center;
     min-width: 32px;
     min-height: 32px;
-    padding: 2px 4px;
+    padding: 2px 6px;
     margin-top: 0.25rem;
+    /* A narrow configured column must not wrap the label one character per
+       line, which would squeeze the control below the minimum target size. */
+    white-space: nowrap;
+    flex: none;
 }
 
 .nat-inline-editor {
@@ -30,6 +42,10 @@
 
 .nat-inline-editor[hidden] {
     display: none;
+}
+
+.nat-inline-editor {
+    max-width: 100%;
 }
 
 .nat-inline-editor input[type="text"],
@@ -54,6 +70,58 @@
 .nat-edit-button:focus-visible,
 .nat-undo:focus-visible,
 .nat-inline-editor :focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+.nat-link {
+    word-break: break-all;
+}
+
+.nat-bulk-panel {
+    display: block;
+    padding: 0.5rem 0;
+}
+
+.nat-bulk-panel[hidden],
+.nat-bulk-control[hidden] {
+    display: none;
+}
+
+.nat-bulk-control {
+    display: inline-block;
+    margin: 0 0.4rem;
+}
+
+.nat-bulk-remove {
+    display: inline-block;
+    margin: 0 0.4rem;
+}
+
+.nat-bulk-status {
+    display: block;
+    margin: 0.4rem 0;
+}
+
+.nat-bulk-status ul {
+    margin: 0.3rem 0 0.3rem 1.2rem;
+    list-style: disc;
+}
+
+.nat-inline-editor input[type="url"] {
+    width: 100%;
+    max-width: 20rem;
+}
+
+.nat-value {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.nat-bulk-toggle:focus-visible,
+.nat-bulk-apply:focus-visible,
+.nat-bulk-undo:focus-visible,
+.nat-bulk-panel :focus-visible {
     outline: 2px solid #2271b1;
     outline-offset: 2px;
 }
