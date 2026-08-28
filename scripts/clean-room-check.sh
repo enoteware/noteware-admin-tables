@@ -19,25 +19,26 @@ fi
 # Only tracked files are scanned. A developer's ignored .env holds real sandbox
 # credentials, and scanning the working directory would both fail this check on
 # a correct machine and print those credentials into the log.
-tracked=$(mktemp)
-trap 'rm -f "$tracked"' EXIT HUP INT TERM
-git ls-files -z \
+tracked=()
+while IFS= read -r -d '' tracked_file; do
+  tracked+=("$tracked_file")
+done < <(git ls-files -z \
   ':!:package-lock.json' \
   ':!:composer.lock' \
-  ':!:scripts/clean-room-check.sh' \
-  > "$tracked"
+  ':!:scripts/clean-room-check.sh')
 
-if [ ! -s "$tracked" ]; then
+if [ "${#tracked[@]}" -eq 0 ]; then
   printf '%s\n' 'No tracked files were listed, so the scan cannot be treated as passing.' >&2
   exit 1
 fi
 
-# Run one scan over tracked content. A scan that cannot run is not a scan that
-# passed, so any tool error fails the check.
+# grep is called once with the whole list, so its exit code is grep's own: zero
+# for a match, one for no match, and anything higher for a real failure. Piping
+# through xargs would hide that behind the xargs exit code instead.
 scan() {
   scan_output=""
   set +e
-  scan_output=$(xargs -0 grep -n -I -i -E "$1" < "$tracked")
+  scan_output=$(grep -n -I -i -E "$1" -- "${tracked[@]}")
   scan_status=$?
   set -e
 
@@ -70,10 +71,21 @@ if [ -n "$real_addresses" ]; then
 fi
 
 # User-facing project content must not use an em-dash or an en-dash.
+prose=()
+while IFS= read -r -d '' prose_file; do
+  prose+=("$prose_file")
+done < <(git ls-files -z -- \
+  README.md ROADMAP.md HANDOFF.md CHANGELOG.md CONTRIBUTING.md SECURITY.md \
+  docs plugin sandbox tests .github scripts \
+  ':!:scripts/clean-room-check.sh')
+
+if [ "${#prose[@]}" -eq 0 ]; then
+  printf '%s\n' 'No user-facing files were listed, so the punctuation scan cannot be treated as passing.' >&2
+  exit 1
+fi
+
 set +e
-dashes=$(git ls-files -z -- README.md ROADMAP.md HANDOFF.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs plugin sandbox tests .github scripts \
-  ':!:scripts/clean-room-check.sh' \
-  | xargs -0 grep -n -I -e '—' -e '–')
+dashes=$(grep -n -I -e '—' -e '–' -- "${prose[@]}")
 dash_status=$?
 set -e
 if [ "$dash_status" -gt 1 ]; then
@@ -86,4 +98,4 @@ if [ -n "$dashes" ]; then
   exit 1
 fi
 
-printf '%s\n' 'Tracked-env, secret-shape, example-domain, and user-facing punctuation checks passed.'
+printf 'Scanned %s tracked files. Tracked-env, secret-shape, example-domain, and user-facing punctuation checks passed.\n' "${#tracked[@]}"
