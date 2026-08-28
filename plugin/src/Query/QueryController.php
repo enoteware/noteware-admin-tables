@@ -319,8 +319,11 @@ final class QueryController
             $query->set('post_status', $value);
             return;
         }
-        if ('author' === $column->field && 1 === preg_match('/^[1-9][0-9]*$/D', $value)) {
-            $query->set('author', (int) $value);
+        if ('author' === $column->field && 1 === preg_match('/^(?:0|[1-9][0-9]*)$/D', $value)) {
+            // An exact list rather than the author argument, because an
+            // imported or system-generated post can legitimately hold author
+            // zero and the author argument treats zero as no filter at all.
+            $query->set('author__in', array((int) $value));
             return;
         }
         $this->rejectFilter($query, $column);

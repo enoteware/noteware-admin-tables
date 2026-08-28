@@ -903,6 +903,42 @@ $assert($administrator->ID === $author_id_value, 'A numeric author column must r
 wp_update_post(array('ID' => $link_post, 'post_author' => $author_original));
 clean_post_cache($link_post);
 
+// A record with author zero is a real state, and the filter must be able to
+// select exactly the rows the column renders.
+add_filter(
+    'noteware_admin_tables_config',
+    static function (array $config): array {
+        $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_author_filter',
+            'label'      => 'Author filter',
+            'source'     => 'native',
+            'type'       => 'number',
+            'field'      => 'author',
+            'filterable' => true,
+        );
+        return $config;
+    },
+    27
+);
+$author_zero_query = (static function () use ($adapters): WP_Query {
+    $previous_get   = $_GET;
+    $previous_query = $GLOBALS['wp_the_query'] ?? null;
+    $previous_wp    = $GLOBALS['wp_query'] ?? null;
+    set_current_screen('edit-nat_demo_record');
+    $query = new WP_Query();
+    $query->set('post_type', 'nat_demo_record');
+    $GLOBALS['wp_the_query'] = $query;
+    $GLOBALS['wp_query']     = $query;
+    $_GET                    = array('post_type' => 'nat_demo_record', 'nat_filter_nat_test_author_filter' => '0');
+    (new QueryController(new Configuration(), $adapters))->apply($query);
+    $_GET                    = $previous_get;
+    $GLOBALS['wp_the_query'] = $previous_query;
+    $GLOBALS['wp_query']     = $previous_wp;
+    return $query;
+})();
+$assert(array(0) === $author_zero_query->get('author__in'), 'An author filter must be able to select records with author zero.');
+$assert(array(0) !== $author_zero_query->get('post__in'), 'An author filter of zero must not fail closed.');
+
 WP_CLI::line('NAT_PARITY_STAGE=bulk');
 
 if ($failures) {

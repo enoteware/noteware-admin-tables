@@ -60,3 +60,7 @@ Plugin taxonomy clauses are grouped with `AND` and then combined with any pre-ex
 ## Amendment, 2026-08-27: presence operators are opt in
 
 A presence operator applies only when the request names it through the column's `nat_op_` parameter. The exact operator is always the fallback. Without this rule a column that lists `empty` first would arrive already filtered on the first page load, and a column that offers only a presence operator would have no way to show every record.
+
+## Amendment, 2026-08-28: exact author selection
+
+The author filter plans through `author__in` rather than the `author` argument. WordPress treats an `author` value of zero as no filter at all, and an imported or system-generated post can legitimately hold author zero, so the column would otherwise render a value its own filter could never select.

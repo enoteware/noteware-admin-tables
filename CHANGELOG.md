@@ -43,6 +43,7 @@ All notable changes to this project are documented in this file.
 - A bulk edit now replaces a cell's existing undo control instead of leaving one that points at an older audit row and fails when clicked.
 - The bulk editor offers a clear option for every column whose adapter supports removal, so a taxonomy or select value can be cleared in bulk instead of only overwritten.
 - A column whose only operator is a presence operator renders that control, with a neutral first option so the initial screen matches an unfiltered list.
+- The author filter can select records whose author is zero, which is a real state for imported and system-generated posts. It uses an exact list, because the WordPress author argument treats zero as no filter at all.
 - A native author column now agrees with itself. A numeric column reads the user ID that the filter matches, a text column reads the display name, and a text author column can no longer be marked filterable, because the filter matches an ID.
 - A taxonomy larger than the bounded choice list keeps its presence filters, which never needed a term list.
 - The page-scoped undo lookup selects the newest row per cell in the database, so repeated edits of one cell cannot hide another cell's undo control.
