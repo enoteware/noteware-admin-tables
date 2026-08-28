@@ -12,11 +12,12 @@ namespace Noteware\AdminTables\Adapter;
 use InvalidArgumentException;
 use RuntimeException;
 use Noteware\AdminTables\Contract\EditableFieldAdapter;
+use Noteware\AdminTables\Contract\FilterableFieldAdapter;
 use Noteware\AdminTables\Editing\ValueValidator;
 use Noteware\AdminTables\Model\ColumnDefinition;
 use Noteware\AdminTables\Model\StoredValue;
 
-final class AcfAdapter implements EditableFieldAdapter
+final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
 {
     /** @var array<string, string> */
     private const TYPES = array(
@@ -264,10 +265,13 @@ final class AcfAdapter implements EditableFieldAdapter
         if ($this->isRequired($column)) {
             throw new InvalidArgumentException('This field is required, so it cannot be cleared.');
         }
+        // The consistency check runs first. A reference row without its value
+        // row reads as absent, and returning here would report and audit a
+        // clean removal while leaving the orphaned row in place.
+        $this->assertReferenceBeforeWrite($postId, $column);
         if (! $expected->exists) {
             return;
         }
-        $this->assertReferenceBeforeWrite($postId, $column);
         delete_field($this->selector($column), $postId);
 
         if (metadata_exists('post', $postId, $column->field) || metadata_exists('post', $postId, $this->referenceKey($column))) {
@@ -324,6 +328,39 @@ final class AcfAdapter implements EditableFieldAdapter
             return array();
         }
         return $this->choiceCache[$this->cacheKey($column)] ?? array();
+    }
+
+    /**
+     * Filtering answers to the same choice rule as editing. Without this the
+     * screen would offer live options that the query layer then rejected,
+     * because the configured allowlist may legitimately be empty.
+     */
+    public function validateFilterValue(ColumnDefinition $column, string $raw): string
+    {
+        if ('select' !== $column->type || ! $this->supports($column)) {
+            return (string) ValueValidator::validate($column, $raw);
+        }
+        return $this->validateChoice($column, $raw);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function filterChoices(ColumnDefinition $column): array
+    {
+        if ('select' !== $column->type) {
+            return array();
+        }
+        if (! $this->supports($column)) {
+            // ACF is absent, or the field cannot be resolved. This adapter
+            // cannot speak for the column, so the configured list stands.
+            return $column->choices;
+        }
+        $live = $this->choices($column);
+        if (! $live || ! $column->choices) {
+            return $live;
+        }
+        return array_intersect_key($live, $column->choices);
     }
 
     /**

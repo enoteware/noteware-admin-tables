@@ -40,6 +40,15 @@ final class MetaAdapter implements EditableFieldAdapter
         if (! current_user_can('edit_post', $postId) || ! current_user_can('edit_post_meta', $postId, $column->field)) {
             throw new InvalidArgumentException('You do not have permission to edit this field.');
         }
+
+        // This adapter writes and validates scalars. A key that already holds
+        // an array or an object could be overwritten here, but the undo would
+        // then refuse to restore the snapshot, so the old value would be gone
+        // for good. Refusing the edit keeps the value recoverable.
+        $current = $this->read($postId, $column);
+        if ($current->exists && null !== $current->value && ! is_scalar($current->value)) {
+            throw new InvalidArgumentException('This record stores a value this list cannot edit. Open the record to change it.');
+        }
     }
 
     public function nonceAction(string $operation, int $identifier, ColumnDefinition $column): string

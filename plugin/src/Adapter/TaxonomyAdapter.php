@@ -193,6 +193,7 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
     {
         unset($column);
         global $wpdb;
+
         $postLock = $wpdb->query(
             $wpdb->prepare('SELECT ID FROM %i WHERE ID = %d FOR UPDATE', $wpdb->posts, $postId)
         );
@@ -205,6 +206,11 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
         if (false === $relationLock) {
             throw new RuntimeException('The term assignments could not be locked for editing.');
         }
+
+        // The rows are only pinned now. Terms cached before the lock may be
+        // older than the rows, and both the second authorization check and the
+        // snapshot read have to see the rows.
+        clean_object_term_cache($postId, (string) get_post_type($postId));
     }
 
     public function write(int $postId, ColumnDefinition $column, mixed $value, StoredValue $expected): void
@@ -305,7 +311,7 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
         if (is_wp_error($result)) {
             throw new RuntimeException('The terms could not be saved.');
         }
-        clean_object_term_cache($postId, $column->field);
+        clean_object_term_cache($postId, (string) get_post_type($postId));
 
         $stored   = $this->read($postId, $column);
         $expected = $slugs;

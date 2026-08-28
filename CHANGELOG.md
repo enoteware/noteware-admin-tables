@@ -23,6 +23,10 @@ All notable changes to this project are documented in this file.
 
 ### Security
 
+- A metadata column that already holds an array or an object refuses inline and bulk editing. This adapter writes and validates scalars, so an overwrite would have been irreversible: the undo re-validates the audited snapshot and would have refused to restore it.
+- Clearing an ACF field checks the value and reference pair before the absent-value shortcut. A reference row with no value row reads as absent, so a clear reported and audited success while leaving the orphaned row in place.
+- Taking the taxonomy relationship lock drops the object term cache, so the second authorization check and the snapshot read see the rows rather than terms cached before the lock. The cache is dropped by post type, which is what `clean_object_term_cache` resolves taxonomies from. The write path passed a taxonomy name there, which cleared nothing.
+- The repository scan inspects each match on a line instead of the whole line. A line carrying an allowed example address next to a real one was discarded whole by the allowlist and passed a check that claims only reserved domains are used.
 - A record holding more than one term in a taxonomy column can no longer be edited from the list screen. The editor carries one term, so opening it and pressing save would have deleted every other term from the record. Undo of a whole term set still works, and a record with one term is still editable.
 - An ACF value row without its reference row, or a reference row without its value row, refuses the edit. The audit snapshot records the value alone, so an undo could not have restored the original pair.
 - Taxonomy undo re-validates every audited slug against the column as it is now.
@@ -44,6 +48,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- An ACF select filter validates against the live ACF choice map, the same rule editing already used. A select that leaves the configured allowlist empty and leans on its live choices had every advertised option rejected by the filter, which forced the result set empty.
 - A presence filter no longer applies to a screen that did not ask for it. A column whose only operator is is-empty or has-a-value left the first page silently filtered with no way to clear it.
 - Saving a featured image that was already set no longer fails as a stale write.
 - A failed edit now clears the post and object term caches as well as the metadata cache, so a persistent object cache cannot keep serving a rolled back value.

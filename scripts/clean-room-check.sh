@@ -38,7 +38,9 @@ fi
 scan() {
   scan_output=""
   set +e
-  scan_output=$(grep -n -I -i -E "$1" -- "${tracked[@]}")
+  # -o prints one line per match. Without it a line holding an allowed value
+  # and a disallowed one is filtered out whole by the allowlist below.
+  scan_output=$(grep -n -o -I -i -E "$1" -- "${tracked[@]}")
   scan_status=$?
   set -e
 

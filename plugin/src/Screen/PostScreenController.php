@@ -446,15 +446,14 @@ final class PostScreenController
             return array();
         }
 
-        $adapter     = $this->adapters->get($column->source);
-        $live        = array();
+        $adapter       = $this->adapters->get($column->source);
+        $live          = array();
         $authoritative = false;
         if ($adapter instanceof \Noteware\AdminTables\Contract\FilterableFieldAdapter) {
+            // The adapter that validates the filter also names the options, so
+            // the screen can never advertise a value the query would reject.
             $live          = $adapter->filterChoices($column);
             $authoritative = true;
-        } elseif ($adapter instanceof \Noteware\AdminTables\Adapter\AcfAdapter) {
-            $live          = $adapter->choices($column);
-            $authoritative = $adapter->supports($column);
         }
 
         if (! $live) {

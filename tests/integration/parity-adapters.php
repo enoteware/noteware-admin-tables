@@ -1091,6 +1091,140 @@ $author_zero_query = (static function () use ($adapters): WP_Query {
 $assert(array(0) === $author_zero_query->get('author__in'), 'An author filter must be able to select records with author zero.');
 $assert(array(0) !== $author_zero_query->get('post__in'), 'An author filter of zero must not fail closed.');
 
+// --- Review round: live select filters, orphan clears, non-scalar meta -------
+
+// An ACF select may leave the configured allowlist empty and lean on the live
+// choice map. The filter must then accept a live option, not reject everything.
+add_filter(
+    'noteware_admin_tables_config',
+    static function (array $config): array {
+        $config['nat_demo_record']['columns'][] = array(
+            'key'        => 'nat_test_live_choice',
+            'label'      => 'Live choice filter',
+            'source'     => 'acf',
+            'type'       => 'select',
+            'field'      => 'nat_demo_choice',
+            'field_key'  => 'field_nat_demo_choice',
+            'filterable' => true,
+            'editable'   => false,
+            'choices'    => array(),
+        );
+        return $config;
+    },
+    31
+);
+$live_choice_query = (static function () use ($adapters): WP_Query {
+    $previous_get   = $_GET;
+    $previous_query = $GLOBALS['wp_the_query'] ?? null;
+    $previous_wp    = $GLOBALS['wp_query'] ?? null;
+    set_current_screen('edit-nat_demo_record');
+    $query = new WP_Query();
+    $query->set('post_type', 'nat_demo_record');
+    $GLOBALS['wp_the_query'] = $query;
+    $GLOBALS['wp_query']     = $query;
+    $_GET                    = array('post_type' => 'nat_demo_record', 'nat_filter_nat_test_live_choice' => 'alpha');
+    (new QueryController(new Configuration(), $adapters))->apply($query);
+    $_GET                    = $previous_get;
+    $GLOBALS['wp_the_query'] = $previous_query;
+    $GLOBALS['wp_query']     = $previous_wp;
+    return $query;
+})();
+$assert(array(0) !== $live_choice_query->get('post__in'), 'A live ACF select choice must not be rejected by the filter validator.');
+$live_choice_meta = $live_choice_query->get('meta_query');
+$assert(is_array($live_choice_meta) && array() !== $live_choice_meta, 'A live ACF select filter must plan a metadata comparison.');
+
+$live_choice_column = (new Configuration())->column('nat_demo_record', 'nat_test_live_choice');
+if (null === $live_choice_column) {
+    WP_CLI::error('The live choice filter column is not configured.');
+}
+$assert(
+    array_key_exists('alpha', $acf_adapter->filterChoices($live_choice_column)),
+    'An ACF select with no configured allowlist must offer its live choices on the screen.'
+);
+$expect_failure(
+    static fn (): string => $acf_adapter->validateFilterValue($live_choice_column, 'not-a-choice'),
+    'A value outside the live ACF choice map must still be refused.'
+);
+
+// A reference row without its value row reads as absent. Clearing must refuse
+// the pair rather than report and audit a clean removal.
+$orphan_post  = $fixture_post(3);
+$orphan_value = get_post_meta($orphan_post, 'nat_demo_link', true);
+$orphan_ref   = get_post_meta($orphan_post, '_nat_demo_link', true);
+delete_post_meta($orphan_post, 'nat_demo_link');
+update_post_meta($orphan_post, '_nat_demo_link', 'field_nat_demo_link');
+$orphan_state = $acf_adapter->read($orphan_post, $link_column);
+$assert(! $orphan_state->exists, 'A value row deleted behind ACF must read as absent.');
+$expect_failure(
+    static fn () => $acf_adapter->remove($orphan_post, $link_column, $orphan_state),
+    'Clearing a field whose reference row has no value row must be refused.'
+);
+$assert(
+    metadata_exists('post', $orphan_post, '_nat_demo_link'),
+    'A refused clear must leave the orphaned reference row untouched for a human to inspect.'
+);
+delete_post_meta($orphan_post, '_nat_demo_link');
+if ('' !== (string) $orphan_value) {
+    update_post_meta($orphan_post, 'nat_demo_link', $orphan_value);
+    update_post_meta($orphan_post, '_nat_demo_link', $orphan_ref);
+}
+
+// A scalar metadata column may already hold a legacy array. Overwriting it
+// would be irreversible, because the undo could not restore the snapshot.
+$note_column = (new Configuration())->column('nat_demo_record', 'nat_demo_note');
+if (null === $note_column) {
+    WP_CLI::error('The generic note column is not configured.');
+}
+$meta_adapter = $adapters->get('meta');
+$legacy_post  = $fixture_post(4);
+$legacy_note  = get_post_meta($legacy_post, 'nat_demo_note', true);
+update_post_meta($legacy_post, 'nat_demo_note', array('one', 'two'));
+$expect_failure(
+    static fn () => $meta_adapter->authorize($legacy_post, $note_column),
+    'A metadata key holding an array must not be editable from the list.'
+);
+$assert(
+    array('one', 'two') === get_post_meta($legacy_post, 'nat_demo_note', true),
+    'A refused metadata edit must leave the stored array in place.'
+);
+delete_post_meta($legacy_post, 'nat_demo_note');
+if (is_string($legacy_note) && '' !== $legacy_note) {
+    update_post_meta($legacy_post, 'nat_demo_note', $legacy_note);
+}
+
+// Terms cached before the relationship lock may be older than the rows. The
+// lock has to drop that cache, and it must name the post type, because
+// clean_object_term_cache resolves taxonomies from the object type.
+$cache_post = $fixture_post(5);
+wp_set_object_terms($cache_post, array('topic-1'), 'nat_demo_topic', false);
+$primed = $taxonomy_adapter->read($cache_post, $topic_column);
+$assert(array('topic-1') === $primed->value, 'The cache priming read must see the assigned term.');
+$second_term = get_term_by('slug', 'topic-2', 'nat_demo_topic');
+if (! $second_term instanceof WP_Term) {
+    WP_CLI::error('The second generic topic term is missing.');
+}
+$wpdb->insert(
+    $wpdb->term_relationships,
+    array(
+        'object_id'        => $cache_post,
+        'term_taxonomy_id' => $second_term->term_taxonomy_id,
+        'term_order'       => 0,
+    ),
+    array('%d', '%d', '%d')
+);
+$stale = $taxonomy_adapter->read($cache_post, $topic_column);
+$assert(array('topic-1') === $stale->value, 'A read before the lock is allowed to serve the cached term set.');
+$taxonomy_adapter->lock($cache_post, $topic_column);
+$fresh = $taxonomy_adapter->read($cache_post, $topic_column);
+$assert(array('topic-1', 'topic-2') === $fresh->value, 'The lock must drop the object term cache so the snapshot read sees the rows.');
+$wpdb->delete(
+    $wpdb->term_relationships,
+    array('object_id' => $cache_post, 'term_taxonomy_id' => $second_term->term_taxonomy_id),
+    array('%d', '%d')
+);
+clean_object_term_cache($cache_post, (string) get_post_type($cache_post));
+wp_update_term_count_now(array($second_term->term_taxonomy_id), 'nat_demo_topic');
+
 WP_CLI::line('NAT_PARITY_STAGE=bulk');
 
 if ($failures) {
