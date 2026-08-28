@@ -153,7 +153,7 @@ final class AcfAdapter implements EditableFieldAdapter
         // update_field() writes past the length rule ACF applies on its own
         // form, so the field's own limit is enforced here.
         $maxLength = $this->maxLength($column);
-        if (null !== $maxLength && is_string($validated) && mb_strlen($validated) > $maxLength) {
+        if (null !== $maxLength && mb_strlen($validated) > $maxLength) {
             throw new InvalidArgumentException('This value is longer than the field allows.');
         }
 
