@@ -23,6 +23,8 @@ All notable changes to this project are documented in this file.
 
 ### Security
 
+- An inline edit and an undo repeat the adapter authorization after acquiring the record lock, matching the bulk path. Until the record is locked, a concurrent request can change its owner or status and the earlier check would stand.
+- A site restriction on an ACF reference key is honoured whether the site registered the key or attached an authorization filter to it. The earlier form checked only for a registration and skipped hook-only policies.
 - Upgrading the audit schema marks rows an earlier version recorded as undo results. Without that, upgrading would offer those rows as undoable and let a user redo the very edit they had already reversed.
 - A bulk edit rechecks the record type and the adapter authorization after acquiring the record lock, so a permission or ownership change made by a concurrent request cannot be bypassed.
 - Undo re-validates an audited featured image against the media library as it is now, so a deleted, replaced, or unreadable attachment cannot be restored.
@@ -48,6 +50,8 @@ All notable changes to this project are documented in this file.
 - A bulk edit now replaces a cell's existing undo control instead of leaving one that points at an older audit row and fails when clicked.
 - The bulk editor offers a clear option for every column whose adapter supports removal, so a taxonomy or select value can be cleared in bulk instead of only overwritten.
 - A column whose only operator is a presence operator renders that control, with a neutral first option so the initial screen matches an unfiltered list.
+- A native title and slug length limit counts characters rather than bytes, so a title in a script that needs more than one byte per character is no longer rejected well inside the stated limit.
+- A taxonomy with more terms than the discovery cap keeps its configured allowlist, resolved one slug at a time. That cap limits what can be listed, not what is legal.
 - Metadata undo re-validates the audited value against the column as it is now, so a choice removed during the undo window cannot be written back.
 - A native edit refreshes the cached post after taking the row lock, so the snapshot comparison reads the locked row rather than a copy cached before the lock.
 - A length check no longer depends on the optional mbstring extension, which would have turned the new rule into a fatal error on a host without it.

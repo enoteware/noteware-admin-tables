@@ -116,17 +116,20 @@ final class AcfAdapter implements EditableFieldAdapter
         // An ACF write touches the reference key as well as the value key, so a
         // deliberate site restriction on the reference key is honoured too.
         //
-        // The check runs only when the site has registered that key. An ACF
-        // reference key starts with an underscore, and WordPress denies
+        // The check runs where the site has said something about that key,
+        // whether by registering it or by attaching an authorization filter.
+        // An ACF reference key starts with an underscore, and WordPress denies
         // edit_post_meta on any such key by default, so an unconditional check
         // would refuse every ACF edit on every site.
         $reference = $this->referenceKey($column);
         $postType  = get_post_type($postId);
-        if (
-            is_string($postType)
-            && registered_meta_key_exists('post', $reference, $postType)
-            && ! current_user_can('edit_post_meta', $postId, $reference)
-        ) {
+        $restricted = is_string($postType)
+            && (
+                registered_meta_key_exists('post', $reference, $postType)
+                || has_filter('auth_post_meta_' . $reference)
+                || has_filter('auth_post_' . $postType . '_meta_' . $reference)
+            );
+        if ($restricted && ! current_user_can('edit_post_meta', $postId, $reference)) {
             throw new InvalidArgumentException('You do not have permission to edit this field.');
         }
     }

@@ -108,18 +108,10 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
             throw new InvalidArgumentException('Choose an allowed term.');
         }
 
+        // filterChoices() already resolves the configured allowlist when the
+        // taxonomy is too large to list, so one check covers both cases.
         $choices = $this->filterChoices($column);
-        if ($choices) {
-            if (! array_key_exists($raw, $choices)) {
-                throw new InvalidArgumentException('Choose an allowed term.');
-            }
-            return $raw;
-        }
-
-        // The taxonomy is larger than the bounded choice list, so only a
-        // configured allowlist may be used, and each slug is looked up on its
-        // own rather than by loading every term.
-        if (! $column->choices || false === $this->termId($column, $raw)) {
+        if (! $choices || ! array_key_exists($raw, $choices)) {
             throw new InvalidArgumentException('Choose an allowed term.');
         }
         return $raw;
@@ -131,7 +123,7 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
             return array();
         }
         if (array_key_exists($column->field, $this->termCache)) {
-            return $this->termCache[$column->field] ?? array();
+            return $this->termCache[$column->field] ?? $this->configuredChoices($column);
         }
 
         $terms = get_terms(
@@ -144,8 +136,11 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
             )
         );
         if (! is_array($terms) || count($terms) > self::MAX_CHOICES) {
+            // Too many terms to list safely. That is a limit on discovery, not
+            // a statement that no legal value exists, so a configured
+            // allowlist is still resolved one slug at a time.
             $this->termCache[$column->field] = null;
-            return array();
+            return $this->configuredChoices($column);
         }
 
         $choices = array();
@@ -154,11 +149,29 @@ final class TaxonomyAdapter implements EditableFieldAdapter, FilterableFieldAdap
             $name = (string) $term->name;
             if ('' === $slug || strlen($slug) > 200 || strlen($name) > 200) {
                 $this->termCache[$column->field] = null;
-                return array();
+                return $this->configuredChoices($column);
             }
             $choices[$slug] = $name;
         }
         $this->termCache[$column->field] = $choices;
+        return $choices;
+    }
+
+    /**
+     * Resolve the site's own allowlist when the full term list cannot be shown.
+     *
+     * @return array<string, string>
+     */
+    private function configuredChoices(ColumnDefinition $column): array
+    {
+        $choices = array();
+        foreach ($column->choices as $slug => $label) {
+            $slug = (string) $slug;
+            $term = get_term_by('slug', $slug, $column->field);
+            if ($term instanceof \WP_Term) {
+                $choices[$slug] = '' !== $label ? $label : (string) $term->name;
+            }
+        }
         return $choices;
     }
 

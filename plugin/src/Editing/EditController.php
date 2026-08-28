@@ -93,6 +93,10 @@ final class EditController
         $this->audit->begin($adapter->transactionalTables($column));
         try {
             $adapter->lock($postId, $column);
+            // The record is only pinned once it is locked. Another request can
+            // change its owner or status between the check above and the lock,
+            // so authorization runs again against freshly read state.
+            $adapter->authorize($postId, $column);
             $before = $adapter->read($postId, $column);
             if (! preg_match('/^[a-f0-9]{64}$/', $snapshot) || ! hash_equals($before->hash(), $snapshot)) {
                 throw new InvalidArgumentException('The value changed after this editor opened. Refresh the page and try again.');
@@ -176,6 +180,7 @@ final class EditController
         $this->audit->begin($adapter->transactionalTables($column));
         try {
             $adapter->lock($postId, $column);
+            $adapter->authorize($postId, $column);
             $current = $adapter->read($postId, $column);
             if (! $current->equals($expected)) {
                 throw new InvalidArgumentException('The value changed after this edit. Undo stopped to protect the newer value.');

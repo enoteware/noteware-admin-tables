@@ -224,15 +224,31 @@ final class NativeAdapter implements EditableFieldAdapter
     private function title(string $raw): string
     {
         $title = sanitize_text_field($raw);
-        if ('' === trim($title) || strlen($title) > self::MAX_TITLE_LENGTH) {
+        if ('' === trim($title) || $this->characters($title) > self::MAX_TITLE_LENGTH) {
             throw new InvalidArgumentException('Enter a title with 1 to 500 characters.');
         }
         return $title;
     }
 
+    /**
+     * Count characters without depending on an optional extension.
+     *
+     * Counting bytes would reject a title that is well inside the stated limit
+     * whenever it is written in a script that needs more than one byte per
+     * character.
+     */
+    private function characters(string $value): int
+    {
+        if (function_exists('mb_strlen')) {
+            return (int) mb_strlen($value, 'UTF-8');
+        }
+        $decoded = preg_match_all('/./us', $value);
+        return false === $decoded ? strlen($value) : $decoded;
+    }
+
     private function slug(string $raw): string
     {
-        if ('' === $raw || strlen($raw) > self::MAX_SLUG_LENGTH) {
+        if ('' === $raw || $this->characters($raw) > self::MAX_SLUG_LENGTH) {
             throw new InvalidArgumentException('Enter a slug with 1 to 200 characters.');
         }
         if (sanitize_title($raw) !== $raw) {
