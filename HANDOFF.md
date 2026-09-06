@@ -71,3 +71,15 @@ GitHub is the live source for the current head SHA, CI results, and automated-re
 ## Next action
 
 Follow `ship-codex` until CI and every available automated reviewer cover the current head. Fix or answer every finding with evidence. Do not merge without Elliot's explicit approval.
+
+## Acceptance catalog slice (issue 12)
+
+The minimum inventory now maps 24 feature families to 5,600 requirement cells. None is marked implemented. The catalog validator and attack-case tests run in CI. Coverage remains incomplete by design; passing integrity does not claim product readiness.
+
+Tracking: https://github.com/enoteware/noteware-admin-tables/issues/12
+
+Project: https://github.com/users/enoteware/projects/5
+
+Run `python3 scripts/check-acceptance.py` and `python3 -m unittest discover -s tests/acceptance -p 'test_*.py'`. `python3 scripts/check-acceptance.py --coverage` must currently exit 2. Reviewers must independently inspect receipts and their output before promoting any requirement.
+
+This slice does not change runtime plugin behavior. Other issue branches own implementation and consumer evidence. The current inventory is a minimum and must expand as concrete integration fields and release combinations are reconciled.

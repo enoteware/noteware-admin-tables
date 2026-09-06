@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0.0] - 2026-09-05
+
+### Added
+
+- A maintained feature acceptance inventory that separates missing, unverified, and evidenced requirements.
+- Automated checks that reject unsupported completion claims and malformed evidence. Full product coverage remains incomplete.
+
 ## [0.2.0.0] - 2026-08-27
 
 ### Added
