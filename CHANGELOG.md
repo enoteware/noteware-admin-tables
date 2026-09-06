@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0.0] - 2026-09-05
+
+### Added
+
+- A column-view editor module with personal and shared views, column search, keyboard ordering, and Unicode view names.
+- Scoped view storage and validation tests. Plugin registration and real WordPress workflow verification remain pending.
+- Typed query operators and saved-segment storage scoped separately by site, screen, view, and user.
+- Validation and unit tests for query construction and storage boundaries. WordPress controls and live saved-segment workflows still require integration.
+- A maintained feature acceptance inventory that separates missing, unverified, and evidenced requirements.
+- Automated checks that reject unsupported completion claims and malformed evidence. Full product coverage remains incomplete.
+
 ## [0.2.0.0] - 2026-08-27
 
 ### Added

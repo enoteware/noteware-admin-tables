@@ -1,0 +1,13 @@
+# Export wiring handoff
+
+The module is intentionally unregistered. Root owns shared bootstrapping, manifests and CI. Do not mark exports complete merely because isolated checks pass.
+
+1. Add an authorized admin action with nonce verification and allowlisted formats/column keys. Resolve visible view columns from the current user's view overlay and the site configuration ceiling. Never accept a browser-supplied adapter or raw query. Export currently supports only explicit scalar projections.
+2. Implement the `ExportRows` loader against the query module. Freeze filter/sort/search/status and selected-row scope. Use a stable snapshot or keyset cursor with a unique tie-breaker, bounded row loading and per-field permission checks. Verify no omissions or duplicates across live filtered pages, including changed/deleted records.
+3. Add persistent background jobs, private staging storage, row/byte/time quotas, cancellation, cleanup and durable checkpoints. Treat all thrown exceptions as failed jobs and discard partial artifacts. Publish only after final authorization and successful writer completion. Current code is a bounded iterator, not a durable job queue.
+4. Add owner-bound, capability-checked downloads with expiry, content headers and permission rechecks. Do not place exports in public uploads. Check actual files at the admin download surface and open CSV/XLSX in desktop consumers. No route or expiry enforcement exists in this module.
+5. Wire `ViewEnvelope` to the view repository. The public overlay has `version`, `id`, `name`, `post_type`, `visibility`, `roles`, `columns`; each column has `key`, `label`, `width`, `visible`. It deliberately carries no source or edit permissions. Check nonce/capability/ownership; preview collision handling and commit atomically. Add trusted file templates, version-controlled storage and explicitly tested future schema migrations.
+
+Dependencies: XLSX needs PHP `ext-zip`; checks also use SimpleXML. Root should add an appropriate runtime feature check and CI coverage rather than make the entire plugin unavailable on a host without ZIP. No Composer library or JavaScript dependency was added. Existing PSR-4 loading discovers the new namespaces automatically.
+
+Suggested CI checks are documented in `exports.md`. Add consumer validation to the integration pipeline using its own pinned reader environment. Unit tests include formulas, ordinary email, Unicode/multiline quoting, state distinction, large-integer precision, malformed imports, row budgets, duplicate IDs, cancellation and permission revocation. They do not prove production files or current/minimum version compatibility.

@@ -71,3 +71,42 @@ GitHub is the live source for the current head SHA, CI results, and automated-re
 ## Next action
 
 Follow `ship-codex` until CI and every available automated reviewer cover the current head. Fix or answer every finding with evidence. Do not merge without Elliot's explicit approval.
+
+
+## Column views module (issue 5)
+
+Tracking: https://github.com/enoteware/noteware-admin-tables/issues/5
+
+The module is locally reviewed and tested but not installed in the dummy site. Root wiring is documented in docs/developer/views-wiring.md. Recent corrections preserve search after reordering, enqueue assets before the admin header, and consistently limit names to 100 Unicode code points.
+
+Fresh isolated checks: PHPCS, PHPStan, 94 PHP tests / 152 assertions, focused ESLint and 3 view JavaScript tests. Real WordPress persistence and browser acceptance remain unverified. Saved view changes still need concurrency verification. Full feature issue remains open.
+
+## Query and segment module (issue 6)
+
+Tracking: https://github.com/enoteware/noteware-admin-tables/issues/6
+
+The module includes typed metadata conditions, segment validation/storage, and query application. Screen/view identifiers use length-prefixed storage keys to avoid ambiguous underscore combinations. A regression covers personal and shared records. Focused storage tests pass (9 tests, 20 assertions), along with coding standards and static analysis after the correction.
+
+Root wiring remains in docs/developer/segments-wiring.md. No new admin controls or active default selection are installed in the dummy site. The issue remains open for full workflow implementation and real WordPress verification.
+
+## Acceptance catalog slice (issue 12)
+
+The minimum inventory now maps 24 feature families to 5,600 requirement cells. None is marked implemented. The catalog validator and attack-case tests run in CI. Coverage remains incomplete by design; passing integrity does not claim product readiness.
+
+Tracking: https://github.com/enoteware/noteware-admin-tables/issues/12
+
+Project: https://github.com/users/enoteware/projects/5
+
+Run `python3 scripts/check-acceptance.py` and `python3 -m unittest discover -s tests/acceptance -p 'test_*.py'`. `python3 scripts/check-acceptance.py --coverage` must currently exit 2. Reviewers must independently inspect receipts and their output before promoting any requirement.
+
+This slice does not change runtime plugin behavior. Other issue branches own implementation and consumer evidence. The current inventory is a minimum and must expand as concrete integration fields and release combinations are reconciled.
+
+## Work-in-progress checkpoint
+
+This branch consolidates current source from issues 5 through 12 so development can pause without losing work. The user requested a save point to conserve usage. It is not an approved release or a full product-coverage claim.
+
+The combined tree has not completed integrated WordPress/browser or hosted review acceptance. Some modules are scaffolding, some remain unwired, and the latest view storage work was interrupted before its final verification. The existing isolated test counts above describe individual historical slices, not this combined tree.
+
+Known remaining work: verify view save/collision/locking behavior in WordPress; exercise numeric and boolean editing fixtures; finish export download routing and jobs; wire additional screens and integrations; complete the feature acceptance matrix. Keep issues open.
+
+Progress automation is paused. No more paid reviewer or subagent requests should start until the user resumes work. Existing PRs 13 and 14 retain their individual review history; this draft is the consolidated checkout. Nothing is merged.

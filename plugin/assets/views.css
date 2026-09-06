@@ -1,0 +1,16 @@
+.nat-view-screen { margin-block: 24px; padding: 20px; border: 1px solid #646970; background: #fff; color: #1d2327; }
+.nat-view-columns { overflow-x: auto; margin-block: 16px; }
+.nat-view-column { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #646970; min-width: 680px; }
+.nat-view-column[hidden] { display: none; }
+.nat-view-column label { display: flex; flex-direction: column; gap: 4px; }
+.nat-view-column label:first-child { min-width: 140px; }
+.nat-views input { border-color: #646970; background: #fff; color: #1d2327; }
+.nat-views :focus-visible { outline: 3px solid #005a87; outline-offset: 2px; }
+.nat-views .button:disabled { color: #50575e !important; }
+@media (prefers-color-scheme: dark) {
+ .nat-view-screen { background: #1d2327; color: #f0f0f1; border-color: #a7aaad; }
+ .nat-view-column { border-color: #a7aaad; }
+ .nat-views input { background: #2c3338; color: #f0f0f1; border-color: #a7aaad; }
+ .nat-views h2 { color: #f0f0f1; }
+ .nat-views :focus-visible { outline-color: #72aee6; }
+}

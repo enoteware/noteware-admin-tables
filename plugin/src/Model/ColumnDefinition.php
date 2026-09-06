@@ -44,7 +44,7 @@ final class ColumnDefinition
 
     private const NATIVE_EDITABLE = array('title', 'slug', 'featured_image');
 
-    private const ACF_EDITABLE_TYPES = array('text', 'url', 'select');
+    private const ACF_EDITABLE_TYPES = array('text', 'url', 'select', 'number', 'boolean');
 
     private const META_EDITABLE_TYPES = array('text', 'number', 'boolean', 'select', 'date', 'url');
 

@@ -20,6 +20,7 @@ use Noteware\AdminTables\Editing\BulkEditController;
 use Noteware\AdminTables\Editing\EditController;
 use Noteware\AdminTables\Query\QueryController;
 use Noteware\AdminTables\Screen\PostScreenController;
+use Noteware\AdminTables\View\ViewController;
 
 final class Plugin
 {
@@ -32,6 +33,8 @@ final class Plugin
         }
 
         self::$booted = true;
+
+        (new ViewController())->register();
 
         $configuration = new Configuration();
         $adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter(), new TaxonomyAdapter()));

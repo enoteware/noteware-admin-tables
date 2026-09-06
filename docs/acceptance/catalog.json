@@ -1,0 +1,2887 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "source_id": "baseline",
+    "version": "requirements-snapshot-2026-09-05",
+    "date": "2026-09-05",
+    "implementation_revision": "a57a0e7f801c27d7670a6636e2e7bad4d392c308",
+    "legacy_scope": "excluded; maintain separately outside public repository",
+    "claim": "incomplete",
+    "inventory_complete": false
+  },
+  "operation_universe": [
+    "display",
+    "sort",
+    "filter",
+    "inline_edit",
+    "bulk_edit",
+    "export",
+    "metrics",
+    "validation",
+    "authorization",
+    "value_states"
+  ],
+  "sources": {
+    "baseline": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/4",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Original project acceptance requirements; external comparative baseline is maintained privately."
+    },
+    "wordpress-query": {
+      "url": "https://developer.wordpress.org/reference/classes/wp_query/",
+      "version": "unversioned-api-contract",
+      "observed_date": "2026-09-05",
+      "inspection": "Public API reference from repository clean-room record."
+    },
+    "acf-update": {
+      "url": "https://www.advancedcustomfields.com/resources/update_field/",
+      "version": "unversioned-api-contract",
+      "observed_date": "2026-09-05",
+      "inspection": "Public API reference from repository clean-room record."
+    },
+    "issue-5": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/5",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Read owning project issue; statements here are original acceptance criteria."
+    },
+    "issue-6": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/6",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Read owning project issue; statements here are original acceptance criteria."
+    },
+    "issue-7": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Read owning project issue; statements here are original acceptance criteria."
+    },
+    "issue-8": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/8",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Read owning project issue; statements here are original acceptance criteria."
+    },
+    "issue-9": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/9",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Read owning project issue; statements here are original acceptance criteria."
+    },
+    "issue-10": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/10",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Read owning project issue; statements here are original acceptance criteria."
+    },
+    "issue-11": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/11",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Read owning project issue; statements here are original acceptance criteria."
+    },
+    "issue-12": {
+      "url": "https://github.com/enoteware/noteware-admin-tables/issues/12",
+      "version": "requirements-snapshot-2026-09-05",
+      "observed_date": "2026-09-05",
+      "inspection": "Read owning project issue; statements here are original acceptance criteria."
+    }
+  },
+  "fixtures": [
+    {
+      "id": "demo-posts",
+      "path": "tests/fixtures/seed.php",
+      "description": "Generic post/CPT, metadata, ACF and taxonomy fixtures; not proof for other screens."
+    }
+  ],
+  "test_inventory": [
+    {
+      "id": "tests/e2e/admin-table.spec.js::renders configured ACF and metadata columns",
+      "path": "tests/e2e/admin-table.spec.js",
+      "selector": "renders configured ACF and metadata columns",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/admin-table.spec.js::sorts and filters through the public list-screen controls",
+      "path": "tests/e2e/admin-table.spec.js",
+      "selector": "sorts and filters through the public list-screen controls",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/admin-table.spec.js::supports keyboard cancel, inline edit, error, and undo states",
+      "path": "tests/e2e/admin-table.spec.js",
+      "selector": "supports keyboard cancel, inline edit, error, and undo states",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/admin-table.spec.js::rejects an invalid typed filter without broadening results",
+      "path": "tests/e2e/admin-table.spec.js",
+      "selector": "rejects an invalid typed filter without broadening results",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/admin-table.spec.js::plugin-owned table markup passes automated WCAG checks",
+      "path": "tests/e2e/admin-table.spec.js",
+      "selector": "plugin-owned table markup passes automated WCAG checks",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/admin-table.spec.js::keeps plugin contrast when the OS prefers dark mode",
+      "path": "tests/e2e/admin-table.spec.js",
+      "selector": "keeps plugin contrast when the OS prefers dark mode",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/parity.spec.js::renders the configured order, widths, links, terms, and images",
+      "path": "tests/e2e/parity.spec.js",
+      "selector": "renders the configured order, widths, links, terms, and images",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/parity.spec.js::edits a link, reloads, undoes, and reloads again",
+      "path": "tests/e2e/parity.spec.js",
+      "selector": "edits a link, reloads, undoes, and reloads again",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/parity.spec.js::filters on the empty and has-a-value operators",
+      "path": "tests/e2e/parity.spec.js",
+      "selector": "filters on the empty and has-a-value operators",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/e2e/parity.spec.js::bulk edits the selected records and undoes them together",
+      "path": "tests/e2e/parity.spec.js",
+      "selector": "bulk edits the selected records and undoes them together",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/integration/parity-adapters.php",
+      "path": "tests/integration/parity-adapters.php",
+      "selector": null,
+      "granularity": "suite",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/integration/public-hooks.php",
+      "path": "tests/integration/public-hooks.php",
+      "selector": null,
+      "granularity": "suite",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/integration/query-safety.php",
+      "path": "tests/integration/query-safety.php",
+      "selector": null,
+      "granularity": "suite",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/integration/security-boundaries.php",
+      "path": "tests/integration/security-boundaries.php",
+      "selector": null,
+      "granularity": "suite",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/js/admin.test.js::opens and cancels an editor with focus returned to its trigger",
+      "path": "tests/js/admin.test.js",
+      "selector": "opens and cancels an editor with focus returned to its trigger",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/performance/query-count.php",
+      "path": "tests/performance/query-count.php",
+      "selector": null,
+      "granularity": "suite",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_editing_is_disabled_by_default",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_editing_is_disabled_by_default",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_select_choice_rules_keep_read_only_display_available",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_select_choice_rules_keep_read_only_display_available",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_direct_constructor_cannot_bypass_select_choice_rules",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_direct_constructor_cannot_bypass_select_choice_rules",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_direct_constructor_rejects_empty_filter_choice_values",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_direct_constructor_rejects_empty_filter_choice_values",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_direct_constructor_cannot_make_images_filterable",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_direct_constructor_cannot_make_images_filterable",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_parity_options_are_captured",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_parity_options_are_captured",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_a_read_only_column_reports_no_operator_support",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_a_read_only_column_reports_no_operator_support",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_taxonomy_and_native_parity_columns_are_accepted",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_taxonomy_and_native_parity_columns_are_accepted",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnDefinitionTest.php::test_invalid_or_unsafe_definitions_are_rejected",
+      "path": "tests/unit/ColumnDefinitionTest.php",
+      "selector": "test_invalid_or_unsafe_definitions_are_rejected",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ColumnRendererTest.php::test_non_scalar_select_values_render_as_empty",
+      "path": "tests/unit/ColumnRendererTest.php",
+      "selector": "test_non_scalar_select_values_render_as_empty",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/PluginTest.php::test_boot_emits_loaded_action_only_once",
+      "path": "tests/unit/PluginTest.php",
+      "selector": "test_boot_emits_loaded_action_only_once",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_a_screen_records_order_removal_and_replacement",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_a_screen_records_order_removal_and_replacement",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_duplicate_column_keys_are_rejected",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_duplicate_column_keys_are_rejected",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_the_checkbox_column_cannot_be_removed",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_the_checkbox_column_cannot_be_removed",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_the_title_column_cannot_be_removed",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_the_title_column_cannot_be_removed",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_plugin_columns_cannot_be_removed_through_the_removal_list",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_plugin_columns_cannot_be_removed_through_the_removal_list",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_ordering_an_unconfigured_plugin_column_is_rejected",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_ordering_an_unconfigured_plugin_column_is_rejected",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_a_column_cannot_be_ordered_and_removed",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_a_column_cannot_be_ordered_and_removed",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_a_replaced_column_cannot_also_be_removed",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_a_replaced_column_cannot_also_be_removed",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_repeated_order_entries_are_rejected",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_repeated_order_entries_are_rejected",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_malformed_order_entries_are_rejected",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_malformed_order_entries_are_rejected",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_percentage_widths_must_leave_room_for_built_in_columns",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_percentage_widths_must_leave_room_for_built_in_columns",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_percentage_widths_within_the_budget_are_accepted",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_percentage_widths_within_the_budget_are_accepted",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_a_screen_minimum_width_must_be_a_bounded_pixel_length",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_a_screen_minimum_width_must_be_a_bounded_pixel_length",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ScreenDefinitionTest.php::test_a_valid_screen_minimum_width_is_kept",
+      "path": "tests/unit/ScreenDefinitionTest.php",
+      "selector": "test_a_valid_screen_minimum_width_is_kept",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/StoredValueTest.php::test_absent_empty_false_and_zero_are_distinct",
+      "path": "tests/unit/StoredValueTest.php",
+      "selector": "test_absent_empty_false_and_zero_are_distinct",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/StoredValueTest.php::test_audit_shape_records_state_type_and_stable_hash",
+      "path": "tests/unit/StoredValueTest.php",
+      "selector": "test_audit_shape_records_state_type_and_stable_hash",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/StoredValueTest.php::test_hash_is_deterministic_for_non_utf8_metadata",
+      "path": "tests/unit/StoredValueTest.php",
+      "selector": "test_hash_is_deterministic_for_non_utf8_metadata",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ValueValidatorTest.php::test_valid_scalar_values_preserve_meaning",
+      "path": "tests/unit/ValueValidatorTest.php",
+      "selector": "test_valid_scalar_values_preserve_meaning",
+      "granularity": "test",
+      "execution": "not_run"
+    },
+    {
+      "id": "tests/unit/ValueValidatorTest.php::test_invalid_values_are_rejected",
+      "path": "tests/unit/ValueValidatorTest.php",
+      "selector": "test_invalid_values_are_rejected",
+      "granularity": "test",
+      "execution": "not_run"
+    }
+  ],
+  "features": [
+    {
+      "id": "native-fields",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "Native values and derived values; derived fields must remain non-editable where appropriate.",
+      "source_ids": [
+        "issue-7"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types"
+      ],
+      "fields": [
+        "id",
+        "title",
+        "slug",
+        "author",
+        "date",
+        "modified",
+        "status",
+        "featured-image",
+        "permalink",
+        "word-count"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "unverified",
+      "installed_state": "unverified",
+      "implementation_paths": [
+        "plugin/src/Screen/PostScreenController.php"
+      ],
+      "fixture_ids": [
+        "demo-posts"
+      ],
+      "test_ids": [
+        "tests/e2e/parity.spec.js::renders the configured order, widths, links, terms, and images"
+      ],
+      "evidence": [],
+      "limitation": "Existing restricted implementation needs fresh per-cell proof on supported versions.",
+      "cell_overrides": {
+        "native-fields/posts/id/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/id/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/title/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/title/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/slug/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/slug/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/author/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/author/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/date/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/date/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/modified/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/modified/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/status/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/status/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/featured-image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/featured-image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/permalink/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/permalink/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/word-count/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/posts/word-count/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/id/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/id/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/title/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/title/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/slug/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/slug/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/author/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/author/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/date/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/date/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/modified/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/modified/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/status/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/status/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/featured-image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/featured-image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/permalink/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/permalink/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/word-count/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/pages/word-count/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/id/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/id/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/title/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/title/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/slug/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/slug/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/author/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/author/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/date/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/date/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/modified/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/modified/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/status/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/status/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/featured-image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/featured-image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/permalink/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/permalink/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/word-count/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "native-fields/custom-post-types/word-count/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        }
+      }
+    },
+    {
+      "id": "metadata-scalars",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "Typed metadata values with absent, empty, false and zero preservation.",
+      "source_ids": [
+        "issue-7"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types"
+      ],
+      "fields": [
+        "text",
+        "number",
+        "boolean",
+        "select",
+        "date",
+        "url",
+        "image"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "unverified",
+      "installed_state": "unverified",
+      "implementation_paths": [
+        "plugin/src/Screen/PostScreenController.php"
+      ],
+      "fixture_ids": [
+        "demo-posts"
+      ],
+      "test_ids": [
+        "tests/e2e/admin-table.spec.js::renders configured ACF and metadata columns"
+      ],
+      "evidence": [],
+      "limitation": "Existing restricted implementation needs fresh per-cell proof on supported versions.",
+      "cell_overrides": {
+        "metadata-scalars/posts/text/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/text/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/number/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/number/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/boolean/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/boolean/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/select/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/select/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/date/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/date/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/url/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/url/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/posts/image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/text/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/text/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/number/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/number/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/boolean/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/boolean/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/select/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/select/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/date/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/date/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/url/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/url/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/pages/image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/text/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/text/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/number/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/number/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/boolean/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/boolean/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/select/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/select/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/date/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/date/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/url/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/url/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "metadata-scalars/custom-post-types/image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        }
+      }
+    },
+    {
+      "id": "acf-scalars",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "ACF public API scalar adapters; current writes limited to text, URL and select.",
+      "source_ids": [
+        "issue-7",
+        "acf-update"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types"
+      ],
+      "fields": [
+        "text",
+        "number",
+        "true-false",
+        "select",
+        "date-picker",
+        "image",
+        "url"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "unverified",
+      "installed_state": "unverified",
+      "implementation_paths": [
+        "plugin/src/Adapter/AcfAdapter.php"
+      ],
+      "fixture_ids": [
+        "demo-posts"
+      ],
+      "test_ids": [
+        "tests/integration/parity-adapters.php"
+      ],
+      "evidence": [],
+      "limitation": "Existing restricted implementation needs fresh per-cell proof on supported versions.",
+      "cell_overrides": {
+        "acf-scalars/posts/text/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/text/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/number/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/number/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/true-false/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/true-false/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/select/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/select/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/date-picker/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/date-picker/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/url/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/url/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/text/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/text/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/number/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/number/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/true-false/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/true-false/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/select/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/select/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/date-picker/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/date-picker/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/url/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/pages/url/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/text/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/text/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/number/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/number/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/true-false/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/true-false/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/select/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/select/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/date-picker/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/date-picker/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/image/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/image/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/url/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/custom-post-types/url/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "acf-scalars/posts/number/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/posts/number/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/posts/true-false/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/posts/true-false/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/posts/date-picker/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/posts/date-picker/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/posts/image/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/posts/image/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/pages/number/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/pages/number/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/pages/true-false/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/pages/true-false/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/pages/date-picker/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/pages/date-picker/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/pages/image/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/pages/image/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/custom-post-types/number/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/custom-post-types/number/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/custom-post-types/true-false/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/custom-post-types/true-false/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/custom-post-types/date-picker/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/custom-post-types/date-picker/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/custom-post-types/image/inline_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        },
+        "acf-scalars/custom-post-types/image/bulk_edit": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "Not in the current ACF adapter write allowlist."
+        }
+      }
+    },
+    {
+      "id": "acf-remaining",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "Inventory each public ACF field capability; never infer universal edit support.",
+      "source_ids": [
+        "issue-7"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "textarea",
+        "email",
+        "password",
+        "range",
+        "radio",
+        "checkbox",
+        "button-group",
+        "time-picker",
+        "date-time-picker",
+        "color-picker",
+        "link",
+        "file",
+        "gallery",
+        "post-object",
+        "relationship",
+        "taxonomy",
+        "user",
+        "wysiwyg",
+        "oembed",
+        "google-map",
+        "group",
+        "repeater",
+        "flexible-content",
+        "clone"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "taxonomy-values",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "Assigned taxonomy value display and allowlisted editing on post screens.",
+      "source_ids": [
+        "issue-7"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types"
+      ],
+      "fields": [
+        "taxonomy-terms"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "unverified",
+      "installed_state": "unverified",
+      "implementation_paths": [
+        "plugin/src/Screen/PostScreenController.php"
+      ],
+      "fixture_ids": [
+        "demo-posts"
+      ],
+      "test_ids": [
+        "tests/integration/parity-adapters.php"
+      ],
+      "evidence": [],
+      "limitation": "Existing restricted implementation needs fresh per-cell proof on supported versions.",
+      "cell_overrides": {
+        "taxonomy-values/posts/taxonomy-terms/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "taxonomy-values/posts/taxonomy-terms/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "taxonomy-values/pages/taxonomy-terms/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "taxonomy-values/pages/taxonomy-terms/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "taxonomy-values/custom-post-types/taxonomy-terms/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "taxonomy-values/custom-post-types/taxonomy-terms/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        }
+      }
+    },
+    {
+      "id": "column-builder",
+      "owner_issue": 5,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/5",
+      "behavior": "Add/remove/order/name/icon/width/type-format/capability/discovery controls with protected checkbox/title.",
+      "source_ids": [
+        "issue-5"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "screen-controls"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "views",
+      "owner_issue": 5,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/5",
+      "behavior": "Name/clone/order/switch private/shared role-scoped views and reopen persisted configuration.",
+      "source_ids": [
+        "issue-5"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "screen-controls"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "table-layout",
+      "owner_issue": 5,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/5",
+      "behavior": "Direct reorder/resize, personal width reset, sticky columns/headers and primary-column controls.",
+      "source_ids": [
+        "issue-5"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "screen-controls"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "smart-operators",
+      "owner_issue": 6,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/6",
+      "behavior": "Text matching, numeric comparisons/ranges, date and relative date operators, multi-value/relationship filters, repeated conditions, clear/reset.",
+      "source_ids": [
+        "issue-6"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "screen-controls"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "segments",
+      "owner_issue": 6,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/6",
+      "behavior": "Private/public saved segments with filters/sort/status/search, defaults per view and permission checks.",
+      "source_ids": [
+        "issue-6"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "screen-controls"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "stable-sorting",
+      "owner_issue": 6,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/6",
+      "behavior": "Native and metadata sort with explicit missing-value ordering and duplicate-free pagination.",
+      "source_ids": [
+        "issue-6",
+        "wordpress-query"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "screen-controls"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "unverified",
+      "installed_state": "unverified",
+      "implementation_paths": [
+        "plugin/src/Screen/PostScreenController.php"
+      ],
+      "fixture_ids": [
+        "demo-posts"
+      ],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "Existing restricted implementation needs fresh per-cell proof on supported versions.",
+      "cell_overrides": {
+        "stable-sorting/posts/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/posts/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/pages/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/pages/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/custom-post-types/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/custom-post-types/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/users/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/users/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/media/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/media/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/comments/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/comments/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/terms/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/terms/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/multisite-sites/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/multisite-sites/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/custom-tables/screen-controls/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "stable-sorting/custom-tables/screen-controls/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        }
+      }
+    },
+    {
+      "id": "quick-add",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "Create records through authorized public APIs with required-field validation.",
+      "source_ids": [
+        "issue-7"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "bulk-jobs",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "Typed transformations; selected/page/all matching scope; preview, confirmation, progress, cancellation and per-record errors.",
+      "source_ids": [
+        "issue-7"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "bulk-delete",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "Capability-checked deletion with recoverable trash where supported.",
+      "source_ids": [
+        "issue-7"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "write-safety",
+      "owner_issue": 7,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/7",
+      "behavior": "Nonce, permissions, stale-write detection, validation, audit, rollback and conditional undo, including mid-job permission changes.",
+      "source_ids": [
+        "issue-7"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "unverified",
+      "installed_state": "unverified",
+      "implementation_paths": [
+        "plugin/src/Screen/PostScreenController.php"
+      ],
+      "fixture_ids": [
+        "demo-posts"
+      ],
+      "test_ids": [
+        "tests/integration/security-boundaries.php"
+      ],
+      "evidence": [],
+      "limitation": "Existing restricted implementation needs fresh per-cell proof on supported versions.",
+      "cell_overrides": {
+        "write-safety/posts/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/posts/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/pages/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/pages/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/custom-post-types/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/custom-post-types/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/users/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/users/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/media/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/media/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/comments/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/comments/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/terms/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/terms/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/multisite-sites/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/multisite-sites/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/custom-tables/field-inventory-pending/export": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        },
+        "write-safety/custom-tables/field-inventory-pending/metrics": {
+          "state": "missing",
+          "evidence": [],
+          "limitation": "No export or metrics implementation at inventoried baseline."
+        }
+      }
+    },
+    {
+      "id": "data-export",
+      "owner_issue": 8,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/8",
+      "behavior": "CSV/JSON/XLSX of active view across filtered pages or selected rows, stable typed ordering, configurable columns, bounded jobs, cancellation and expiring private downloads.",
+      "source_ids": [
+        "issue-8"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "screen-controls"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "settings-portability",
+      "owner_issue": 8,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/8",
+      "behavior": "Schema-validated import/export, templates, file storage and migrations without executable configuration.",
+      "source_ids": [
+        "issue-8"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "screen-controls"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "core-screens",
+      "owner_issue": 9,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/9",
+      "behavior": "User/media/comment/term/multisite screens with per-field capabilities.",
+      "source_ids": [
+        "issue-9"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "conditional-formatting",
+      "owner_issue": 9,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/9",
+      "behavior": "Private/global prioritized formatting rules with permission enforcement and accessible contrast.",
+      "source_ids": [
+        "issue-9"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "value-preview",
+      "owner_issue": 9,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/9",
+      "behavior": "Accessible value previews preserving meaningful types.",
+      "source_ids": [
+        "issue-9"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "footer-metrics",
+      "owner_issue": 9,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/9",
+      "behavior": "Counts, percentages, sums, means, minima/maxima and date calculations over complete filtered data.",
+      "source_ids": [
+        "issue-9"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "custom-tables",
+      "owner_issue": 9,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/9",
+      "behavior": "Explicit registered typed custom tables with bounded joins/references and authorized write adapters.",
+      "source_ids": [
+        "issue-9"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "commerce",
+      "owner_issue": 10,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/10",
+      "behavior": "Public API products, variations, legacy/HPOS orders, coupons, reviews, subscriptions and customer statistics, correct refunds/currency, no double counts.",
+      "source_ids": [
+        "issue-10"
+      ],
+      "screens": [
+        "products",
+        "variations",
+        "orders-legacy",
+        "orders-hpos",
+        "coupons",
+        "product-reviews",
+        "subscriptions",
+        "customers"
+      ],
+      "fields": [
+        "field-inventory-pending"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    },
+    {
+      "id": "integration-roster",
+      "owner_issue": 11,
+      "owner_url": "https://github.com/enoteware/noteware-admin-tables/issues/11",
+      "behavior": "Inventory individual fields/screens and activated public-API proofs for each integration, distinguishing licensed artifacts.",
+      "source_ids": [
+        "issue-11"
+      ],
+      "screens": [
+        "posts",
+        "pages",
+        "custom-post-types",
+        "users",
+        "media",
+        "comments",
+        "terms",
+        "multisite-sites",
+        "custom-tables"
+      ],
+      "fields": [
+        "meta-box",
+        "jetengine",
+        "toolset-types",
+        "pods",
+        "gravity-forms",
+        "yoast-seo",
+        "rank-math",
+        "seopress",
+        "events-calendar",
+        "buddypress",
+        "beaver-builder-compatibility",
+        "media-library-assistant-compatibility"
+      ],
+      "inventory_complete": false,
+      "inventory_limitation": "Owner must reconcile every documented field, property and operation; this is a minimum inventory, not exhaustive baseline coverage.",
+      "operations": [
+        "display",
+        "sort",
+        "filter",
+        "inline_edit",
+        "bulk_edit",
+        "export",
+        "metrics",
+        "validation",
+        "authorization",
+        "value_states"
+      ],
+      "state": "missing",
+      "installed_state": "unverified",
+      "implementation_paths": [],
+      "fixture_ids": [],
+      "test_ids": [],
+      "evidence": [],
+      "limitation": "No complete implementation or executable acceptance proof inventoried at baseline revision."
+    }
+  ],
+  "release_matrix": [
+    {
+      "id": "wordpress:6.5",
+      "dimension": "wordpress",
+      "value": "6.5",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "wordpress:7.1",
+      "dimension": "wordpress",
+      "value": "7.1",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "php:8.1",
+      "dimension": "php",
+      "value": "8.1",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "php:8.4",
+      "dimension": "php",
+      "value": "8.4",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "integrations:acf-free-6.8.8",
+      "dimension": "integrations",
+      "value": "acf-free-6.8.8",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "integrations:acf-pro-version-pending",
+      "dimension": "integrations",
+      "value": "acf-pro-version-pending",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "integrations:woocommerce-version-pending",
+      "dimension": "integrations",
+      "value": "woocommerce-version-pending",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "integrations:other-integrations-version-pending",
+      "dimension": "integrations",
+      "value": "other-integrations-version-pending",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "roles:administrator",
+      "dimension": "roles",
+      "value": "administrator",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "roles:editor",
+      "dimension": "roles",
+      "value": "editor",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "roles:author-own-record",
+      "dimension": "roles",
+      "value": "author-own-record",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "roles:author-other-record",
+      "dimension": "roles",
+      "value": "author-other-record",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "roles:subscriber",
+      "dimension": "roles",
+      "value": "subscriber",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "roles:logged-out",
+      "dimension": "roles",
+      "value": "logged-out",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "roles:custom-capability-denied",
+      "dimension": "roles",
+      "value": "custom-capability-denied",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "dataset:60-records",
+      "dimension": "dataset",
+      "value": "60-records",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "dataset:10000-records",
+      "dimension": "dataset",
+      "value": "10000-records",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "interaction:keyboard-only",
+      "dimension": "interaction",
+      "value": "keyboard-only",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "interaction:screen-reader-voiceover-safari",
+      "dimension": "interaction",
+      "value": "screen-reader-voiceover-safari",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "interaction:screen-reader-nvda-firefox",
+      "dimension": "interaction",
+      "value": "screen-reader-nvda-firefox",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "interaction:light",
+      "dimension": "interaction",
+      "value": "light",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "interaction:os-dark-preference",
+      "dimension": "interaction",
+      "value": "os-dark-preference",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "interaction:supported-admin-dark-theme",
+      "dimension": "interaction",
+      "value": "supported-admin-dark-theme",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "consumer:csv-libreoffice",
+      "dimension": "consumer",
+      "value": "csv-libreoffice",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "consumer:xlsx-excel",
+      "dimension": "consumer",
+      "value": "xlsx-excel",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "consumer:json-parser",
+      "dimension": "consumer",
+      "value": "json-parser",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "resilience:concurrent-writes",
+      "dimension": "resilience",
+      "value": "concurrent-writes",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "resilience:rollback",
+      "dimension": "resilience",
+      "value": "rollback",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "resilience:partial-bulk-failure",
+      "dimension": "resilience",
+      "value": "partial-bulk-failure",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "resilience:permission-change",
+      "dimension": "resilience",
+      "value": "permission-change",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "resilience:cancel-resume",
+      "dimension": "resilience",
+      "value": "cancel-resume",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "resilience:download-expiry",
+      "dimension": "resilience",
+      "value": "download-expiry",
+      "state": "unverified",
+      "evidence": []
+    }
+  ],
+  "release_cross_product_complete": false,
+  "improvements": [
+    {
+      "id": "bounded-queries",
+      "metric": "query-count-delta",
+      "threshold": 4,
+      "protocol": "Same 10000-record fixture; compare 20-row and 100-row pages, cold and warm caches; also compare reference and candidate query/runtime medians across 5 runs.",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "task-efficiency",
+      "metric": "median-task-duration-ratio",
+      "threshold": 0.9,
+      "protocol": "At least 5 paired runs of configure/filter/edit/export against a lawfully measured reference on the same fixture and hardware; candidate/reference <= 0.90 with no extra errors.",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "audit-undo",
+      "metric": "recovered-write-fraction",
+      "threshold": 1,
+      "protocol": "Every authorized write creates one attributable audit; undo restores exact previous existence/type/value; concurrent later writes are never overwritten.",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "write-preview",
+      "metric": "preview-write-count",
+      "threshold": 0,
+      "protocol": "Preview must cause zero mutations and show exact scope/count/diff; confirm changes only the previewed authorized rows.",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "bulk-recovery",
+      "metric": "duplicate-write-count",
+      "threshold": 0,
+      "protocol": "Inject failure/cancellation after a checkpoint then resume; zero repeated commits, omitted rows or lost error records.",
+      "state": "unverified",
+      "evidence": []
+    },
+    {
+      "id": "accessible-errors",
+      "metric": "critical-accessibility-defects",
+      "threshold": 0,
+      "protocol": "Keyboard and screen-reader walkthrough: visible focus returns to trigger, errors announced, all actions reachable; zero critical/serious automated defects; separately verify light and supported dark contrast.",
+      "state": "unverified",
+      "evidence": []
+    }
+  ],
+  "release_matrix_notes": "Version entries are target candidates, not executed combinations or a supported-version guarantee. README minimums are WordPress 6.5 and PHP 8.1. Owners must pin current supported integration versions and enumerate combinations before release acceptance."
+}

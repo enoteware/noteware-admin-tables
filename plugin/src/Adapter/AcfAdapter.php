@@ -14,6 +14,7 @@ use RuntimeException;
 use Noteware\AdminTables\Contract\EditableFieldAdapter;
 use Noteware\AdminTables\Contract\FilterableFieldAdapter;
 use Noteware\AdminTables\Editing\ValueValidator;
+use Noteware\AdminTables\Editing\AcfNumberBounds;
 use Noteware\AdminTables\Model\ColumnDefinition;
 use Noteware\AdminTables\Model\StoredValue;
 
@@ -31,7 +32,7 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
     );
 
     /** Types this adapter is allowed to write. */
-    private const WRITABLE_TYPES = array('text', 'url', 'select');
+    private const WRITABLE_TYPES = array('text', 'url', 'select', 'number', 'boolean');
 
     /** @var array<string, bool> */
     private array $supportCache = array();
@@ -44,6 +45,9 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
 
     /** @var array<string, int> */
     private array $maxLengthCache = array();
+
+    /** @var array<string, array<string, mixed>> */
+    private array $numberBounds = array();
 
     public function source(): string
     {
@@ -59,7 +63,11 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
         if (! $exists) {
             return new StoredValue(false, null);
         }
-        $value        = get_field($this->selector($column), $postId);
+        // Scalar snapshots use stored values, not formatting that collapses
+        // an empty boolean to false or rounds a high-precision decimal.
+        $value = in_array($column->type, array('number', 'boolean'), true)
+            ? get_post_meta($postId, $column->field, true)
+            : get_field($this->selector($column), $postId);
         $displayLabel = null;
         if ('select' === $column->type && is_scalar($value)) {
             $cacheKey     = $this->cacheKey($column);
@@ -90,6 +98,7 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
             && self::TYPES[$column->type] === $field['type'];
         if ($supported && is_array($field)) {
             $this->requiredCache[$cacheKey] = ! empty($field['required']);
+            $this->numberBounds[$cacheKey] = array('min' => $field['min'] ?? '', 'max' => $field['max'] ?? '');
             unset($this->maxLengthCache[$cacheKey]);
             $maxLength = $field['maxlength'] ?? null;
             if (is_numeric($maxLength) && (int) $maxLength > 0) {
@@ -108,11 +117,21 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
         if (! in_array($column->type, self::WRITABLE_TYPES, true)) {
             throw new InvalidArgumentException('This ACF field type is not editable.');
         }
+        // Authorization is repeated after locking and for every bulk record.
+        // Re-read live field policy instead of reusing a prior record's rules.
+        $cacheKey = $this->cacheKey($column);
+        unset($this->supportCache[$cacheKey], $this->requiredCache[$cacheKey], $this->numberBounds[$cacheKey]);
         if (! $this->supports($column)) {
             throw new InvalidArgumentException('The configured ACF field no longer matches this column.');
         }
         if (! current_user_can('edit_post', $postId) || ! current_user_can('edit_post_meta', $postId, $column->field)) {
             throw new InvalidArgumentException('You do not have permission to edit this field.');
+        }
+        if (in_array($column->type, array('number', 'boolean'), true)) {
+            $current = $this->read($postId, $column);
+            if ($current->exists && ! is_string($current->value)) {
+                throw new InvalidArgumentException('This record stores a value this scalar editor cannot restore safely.');
+            }
         }
         // An ACF write touches the reference key as well as the value key, so a
         // deliberate site restriction on the reference key is honoured too.
@@ -146,12 +165,22 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
 
     public function validate(ColumnDefinition $column, mixed $value): mixed
     {
-        $validated = 'select' === $column->type
+        if (! $this->supports($column)) {
+            throw new InvalidArgumentException('The configured ACF field no longer matches this column.');
+        }
+        // An optional scalar may store an explicit empty string. Removal is a
+        // separate operation that deletes both value and reference rows.
+        $emptyScalar = '' === $value && in_array($column->type, array('number', 'boolean'), true);
+        $validated = $emptyScalar ? '' : ('select' === $column->type
             ? $this->validateChoice($column, $value)
-            : ValueValidator::validate($column, $value);
+            : ValueValidator::validate($column, $value));
 
-        if ('' === $validated && $this->isRequired($column)) {
+        if (('' === $validated || ('boolean' === $column->type && '0' === $validated)) && $this->isRequired($column)) {
             throw new InvalidArgumentException('This field is required, so it cannot be left empty.');
+        }
+
+        if ('number' === $column->type && '' !== $validated) {
+            AcfNumberBounds::validate($validated, $this->numberBounds[$this->cacheKey($column)] ?? array());
         }
 
         // update_field() writes past the length rule ACF applies on its own
@@ -199,7 +228,7 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
 
     public function write(int $postId, ColumnDefinition $column, mixed $value, StoredValue $expected): void
     {
-        unset($expected);
+        $this->assertExpected($postId, $column, $expected);
         if (! is_string($value)) {
             throw new InvalidArgumentException('This adapter only writes validated string values.');
         }
@@ -262,6 +291,7 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
 
     public function remove(int $postId, ColumnDefinition $column, StoredValue $expected): void
     {
+        $this->assertExpected($postId, $column, $expected);
         if ($this->isRequired($column)) {
             throw new InvalidArgumentException('This field is required, so it cannot be cleared.');
         }
@@ -405,6 +435,13 @@ final class AcfAdapter implements EditableFieldAdapter, FilterableFieldAdapter
         }
         $this->choiceCache[$cacheKey] = $choices;
         return true;
+    }
+
+    private function assertExpected(int $postId, ColumnDefinition $column, StoredValue $expected): void
+    {
+        if (! $expected->equals($this->read($postId, $column))) {
+            throw new RuntimeException('The field changed before the edit could be saved.');
+        }
     }
 
     /**
