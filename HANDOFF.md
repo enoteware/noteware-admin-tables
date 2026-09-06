@@ -71,3 +71,11 @@ GitHub is the live source for the current head SHA, CI results, and automated-re
 ## Next action
 
 Follow `ship-codex` until CI and every available automated reviewer cover the current head. Fix or answer every finding with evidence. Do not merge without Elliot's explicit approval.
+
+## Query and segment module (issue 6)
+
+Tracking: https://github.com/enoteware/noteware-admin-tables/issues/6
+
+The module includes typed metadata conditions, segment validation/storage, and query application. Screen/view identifiers use length-prefixed storage keys to avoid ambiguous underscore combinations. A regression covers personal and shared records. Focused storage tests pass (9 tests, 20 assertions), along with coding standards and static analysis after the correction.
+
+Root wiring remains in docs/developer/segments-wiring.md. No new admin controls or active default selection are installed in the dummy site. The issue remains open for full workflow implementation and real WordPress verification.

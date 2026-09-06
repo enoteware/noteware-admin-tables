@@ -16,6 +16,7 @@ use Noteware\AdminTables\Contract\FilterableFieldAdapter;
 use Noteware\AdminTables\Editing\ValueValidator;
 use Noteware\AdminTables\Model\ColumnDefinition;
 use Noteware\AdminTables\Model\ScreenDefinition;
+use Noteware\AdminTables\Segment\SegmentDefinition;
 
 final class QueryController
 {
@@ -26,6 +27,9 @@ final class QueryController
 
     /** @var list<string> */
     private array $warnings = array();
+
+    /** @var array<string, mixed> */
+    private array $request = array();
 
     public function __construct(
         private readonly Configuration $configuration,
@@ -39,8 +43,11 @@ final class QueryController
         add_action('admin_notices', array($this, 'renderErrors'));
     }
 
-    public function apply(\WP_Query $query): void
+    /** @param array<string, mixed>|null $request Explicit unslashed segment values, or the browser request. */
+    public function apply(\WP_Query $query, ?array $request = null): void
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Read-only filter values are individually validated below.
+        $this->request = $request ?? wp_unslash($_GET);
         if (! is_admin() || ! $query->is_main_query()) {
             return;
         }
@@ -128,6 +135,47 @@ final class QueryController
     }
 
     /**
+     * Replay only on the current editable post screen. Invalid saved state fails closed.
+     * The caller resolves the visible view and personal/shared segment before calling.
+     */
+    public function applySegment(\WP_Query $query, string $postType, SegmentDefinition $segment): void
+    {
+        $screen = get_current_screen();
+        $type = get_post_type_object($postType);
+        $queryType = $query->get('post_type') ?: 'post';
+        if (! is_admin() || ! $query->is_main_query() || ! $screen || 'edit' !== $screen->base || $screen->post_type !== $postType || $queryType !== $postType) {
+            return;
+        }
+        try {
+            if (! $type || ! current_user_can($type->cap->edit_posts) || ! $this->configuration->screen($postType)) {
+                throw new InvalidArgumentException('The saved segment screen is not accessible.');
+            }
+            $requests = SegmentRequest::compile($segment, $this->configuration->columns($postType), $this->adapters);
+            $data = $segment->toArray();
+            if (isset($data['status']) && '' !== $data['status'] && 'all' !== $data['status'] && ! get_post_status_object($data['status'])) {
+                throw new InvalidArgumentException('The saved status is no longer available.');
+            }
+            if (isset($data['sort'])) {
+                $query->set('orderby', ScreenDefinition::COLUMN_PREFIX . $data['sort']['column']);
+                $query->set('order', $data['sort']['direction']);
+            }
+            if (isset($data['search'])) {
+                $query->set('s', sanitize_text_field($data['search']));
+            }
+            if (isset($data['status'])) {
+                $query->set('post_status', in_array($data['status'], array('', 'all'), true) ? '' : $data['status']);
+            }
+            // No condition is omitted. Multiple conditions on one column are ANDed by apply.
+            foreach ($requests ?: array(array()) as $request) {
+                $this->apply($query, $request);
+            }
+        } catch (InvalidArgumentException $error) {
+            $query->set('post__in', array(0));
+            $this->errors[] = $error->getMessage();
+        }
+    }
+
+    /**
      * Resolve the operator this request asks for, or null when no filter applies.
      *
      * A presence operator only ever applies when the request names it. An
@@ -139,12 +187,12 @@ final class QueryController
         $operatorParameter = 'nat_op_' . $column->key;
         $operator          = 'is';
 
-        if (isset($_GET[$operatorParameter])) {
-            if (! is_string($_GET[$operatorParameter])) {
+        if (isset($this->request[$operatorParameter])) {
+            if (! is_string($this->request[$operatorParameter])) {
                 $this->rejectFilter($query, $column);
                 return null;
             }
-            $requested = sanitize_key(wp_unslash($_GET[$operatorParameter]));
+            $requested = sanitize_key($this->request[$operatorParameter]);
             if ('' !== $requested) {
                 if (! $column->supportsOperator($requested)) {
                     $this->rejectFilter($query, $column, __('That filter type is not available for this column.', 'noteware-admin-tables'));
@@ -164,14 +212,14 @@ final class QueryController
         }
 
         $parameter = 'nat_filter_' . $column->key;
-        if (! isset($_GET[$parameter])) {
+        if (! isset($this->request[$parameter])) {
             return null;
         }
-        if (! is_string($_GET[$parameter])) {
+        if (! is_string($this->request[$parameter])) {
             $this->rejectFilter($query, $column);
             return null;
         }
-        if ('' === $_GET[$parameter]) {
+        if ('' === $this->request[$parameter]) {
             return null;
         }
         return 'is';
@@ -180,19 +228,19 @@ final class QueryController
     /**
      * The validated exact filter value, or null when the request was rejected.
      */
-    private function exactValue(\WP_Query $query, ColumnDefinition $column): ?string
+    private function exactValue(\WP_Query $query, ColumnDefinition $column, string $prefix = 'nat_filter_'): ?string
     {
-        $parameter = 'nat_filter_' . $column->key;
-        if (! isset($_GET[$parameter]) || ! is_string($_GET[$parameter])) {
+        $parameter = $prefix . $column->key;
+        if (! isset($this->request[$parameter]) || ! is_string($this->request[$parameter])) {
             $this->rejectFilter($query, $column);
             return null;
         }
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The typed validator must see the exact unslashed value and sanitizes text itself.
-        $raw     = wp_unslash($_GET[$parameter]);
+        $raw     = $this->request[$parameter];
         $adapter = $this->adapters->get($column->source);
         try {
             if ($adapter instanceof FilterableFieldAdapter) {
-                return $adapter->validateFilterValue($column, is_string($raw) ? $raw : '');
+                return $adapter->validateFilterValue($column, $raw);
             }
             return ValueValidator::validate($column, $raw);
         } catch (InvalidArgumentException) {
@@ -206,48 +254,23 @@ final class QueryController
      */
     private function metadataClause(\WP_Query $query, ColumnDefinition $column, string $operator): ?array
     {
-        if ('empty' === $operator) {
-            return array(
-                'relation' => 'OR',
-                array(
-                    'key'     => $column->field,
-                    'compare' => 'NOT EXISTS',
-                ),
-                array(
-                    'key'     => $column->field,
-                    'value'   => '',
-                    'compare' => '=',
-                ),
-            );
+        if (in_array($operator, array('empty', 'not_empty', 'absent', 'present', 'stored_empty'), true)) {
+            return MetadataCondition::plan($column, $operator);
         }
-        if ('not_empty' === $operator) {
-            return array(
-                'relation' => 'AND',
-                array(
-                    'key'     => $column->field,
-                    'compare' => 'EXISTS',
-                ),
-                array(
-                    'key'     => $column->field,
-                    'value'   => '',
-                    'compare' => '!=',
-                ),
-            );
-        }
-
         $value = $this->exactValue($query, $column);
         if (null === $value) {
             return null;
         }
-        if ('acf' === $column->source && 'date' === $column->type) {
-            $value = str_replace('-', '', $value);
+        $upper = 'between' === $operator ? $this->exactValue($query, $column, 'nat_filter_to_') : null;
+        if ('between' === $operator && null === $upper) {
+            return null;
         }
-        return array(
-            'key'     => $column->field,
-            'value'   => $value,
-            'compare' => '=',
-            'type'    => $this->metaType($column),
-        );
+        try {
+            return MetadataCondition::plan($column, $operator, $value, $upper);
+        } catch (InvalidArgumentException) {
+            $this->rejectFilter($query, $column);
+            return null;
+        }
     }
 
     /**
@@ -286,7 +309,8 @@ final class QueryController
         if ('native' === $column->source) {
             $allowed = array('id' => 'ID', 'title' => 'title', 'slug' => 'name', 'author' => 'author', 'date' => 'date');
             if (isset($allowed[$column->field])) {
-                $query->set('orderby', $allowed[$column->field]);
+                $direction = 'ASC' === strtoupper((string) $query->get('order')) ? 'ASC' : 'DESC';
+                $query->set('orderby', array($allowed[$column->field] => $direction, 'ID' => $direction));
             }
             return;
         }
@@ -310,7 +334,8 @@ final class QueryController
             ? array('relation' => 'AND', $metaQuery, $sortPresence)
             : array($sortPresence);
         $query->set('meta_query', $metaQuery);
-        $query->set('orderby', $sortClause);
+        $direction = 'ASC' === strtoupper((string) $query->get('order')) ? 'ASC' : 'DESC';
+        $query->set('orderby', array($sortClause => $direction, 'ID' => $direction));
     }
 
     private function applyNativeFilter(\WP_Query $query, ColumnDefinition $column, string $value): void
