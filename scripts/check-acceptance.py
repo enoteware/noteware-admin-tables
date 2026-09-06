@@ -33,6 +33,8 @@ def string_list(value):
 
 
 def validate(data, root):
+    if not isinstance(data, dict):
+        raise ValueError('Catalog root must be a JSON object')
     errors, blockers = [], []
     counts = Counter({state: 0 for state in STATES})
     root = root.resolve()
@@ -50,7 +52,7 @@ def validate(data, root):
             return None
         return target
 
-    def evidence(refs, subject):
+    def evidence(refs, subject, allowed_tests, allowed_fixtures):
         nonlocal current_revision
         if not string_list(refs):
             return False
@@ -64,11 +66,13 @@ def validate(data, root):
                 if current_revision is None:
                     current_revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
                 valid = (record['result'] == 'pass' and record['revision'] == current_revision
-                         and string_list(record['subjects']) and subject in record['subjects'] and bool(record['command'])
-                         and bool(record['environment']) and bool(record['reviewer'])
+                         and string_list(record['subjects']) and subject in record['subjects']
+                         and isinstance(record['command'], str) and bool(record['command'].strip())
+                         and isinstance(record['reviewer'], str) and bool(record['reviewer'].strip())
+                         and isinstance(record['environment'], dict) and bool(record['environment'])
                          and string_list(record['test_ids']) and string_list(record['fixture_ids'])
-                         and all(t in test_ids for t in record['test_ids'])
-                         and all(f in fixtures for f in record['fixture_ids'])
+                         and all(t in allowed_tests for t in record['test_ids'])
+                         and all(f in allowed_fixtures for f in record['fixture_ids'])
                          and bool(file(record['output_path']))
                          and date.fromisoformat(record['date']) <= date.today())
                 require(valid, f'{subject}: invalid/stale evidence receipt')
@@ -137,7 +141,7 @@ def validate(data, root):
             if state == 'implemented':
                 require(bool(feature['implementation_paths']) and bool(feature['test_ids']) and bool(feature['fixture_ids']), f'{cell}: implementation/test/fixture required')
                 require(feature['installed_state'] == 'installed', f'{cell}: installed dependency proof required')
-                require(evidence(entry.get('evidence', []), cell), f'{cell}: passing exact-cell evidence required')
+                require(evidence(entry.get('evidence', []), cell, feature['test_ids'], feature['fixture_ids']), f'{cell}: passing exact-cell evidence required')
             else:
                 blockers.append(f'{cell}: {state}')
     for section in ['release_matrix', 'improvements']:
@@ -148,7 +152,7 @@ def validate(data, root):
             ids.add(row['id'])
             require(row['state'] in STATES, f"{row['id']}: invalid state")
             if row['state'] == 'implemented':
-                require(evidence(row['evidence'], row['id']), f"{row['id']}: passing evidence required")
+                require(evidence(row['evidence'], row['id'], test_ids, fixtures), f"{row['id']}: passing evidence required")
             else:
                 blockers.append(f"{row['id']}: {row['state']}")
     required_dimensions = {'wordpress', 'php', 'integrations', 'roles', 'dataset', 'interaction', 'consumer', 'resilience'}
