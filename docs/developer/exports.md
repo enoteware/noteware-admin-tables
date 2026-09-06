@@ -1,6 +1,6 @@
 # Export and portable-view module
 
-This module provides original scalar file writers, a bounded authorized page iterator and a strict presentation-settings envelope. It does not register an admin action, queue, download endpoint or settings persistence. Issue acceptance remains incomplete until these components are wired and tested through the actual admin surface.
+This module provides original scalar file writers, a bounded authorized page iterator, a strict presentation-settings envelope, and an admin download for the active filtered view. It still does not implement a durable background queue, view import UI or settings-file templates. Issue 8 acceptance remains incomplete until those remaining pieces and independent consumer checks are done.
 
 ## File contract
 

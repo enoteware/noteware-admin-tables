@@ -1,6 +1,6 @@
 # ADR 0008: Saved presentation views over a trusted catalog
 
-Status: Proposed module; shared bootstrap wiring pending integration.
+Status: Accepted for the presentation overlay and Tools screen. Broader issue 5 editor features remain open.
 
 Views are version 1 presentation overlays. They reference configured column keys and may change only visibility, ordering, labels, and bounded widths. Site-controlled definitions remain authoritative for source identifiers, field adapters, and edit/filter/sort permissions. Checkbox and title stay first. Unknown options, stale columns, duplicate keys, unsupported versions, and invalid widths reject saves. Invalid stored layouts fall back to the site configuration.
 

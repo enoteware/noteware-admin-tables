@@ -70,6 +70,27 @@ final class QueryController
             }
         }
 
+        $this->applyColumnFilters($query, $postType);
+    }
+
+    /**
+     * Apply allowlisted filters from an explicit frozen request.
+     *
+     * Used by export jobs that are not the current list-screen main query.
+     *
+     * @param array<string, mixed> $request Unslashed filter values.
+     */
+    public function applyFrozenFilters(\WP_Query $query, string $postType, array $request): void
+    {
+        if (! in_array($postType, $this->configuration->postTypes(), true)) {
+            return;
+        }
+        $this->request = $request;
+        $this->applyColumnFilters($query, $postType);
+    }
+
+    private function applyColumnFilters(\WP_Query $query, string $postType): void
+    {
         $pluginMetaFilters = array();
         $pluginTaxFilters  = array();
         $metadataFilters   = 0;

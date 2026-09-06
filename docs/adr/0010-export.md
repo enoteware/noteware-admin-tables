@@ -1,6 +1,6 @@
 # 0010: Scalar streaming exports and presentation-only portability
 
-Status: proposed module, pending application integration.
+Status: accepted for synchronous owner-bound downloads. Background workers, view import and consumer-matrix acceptance remain open.
 
 The export boundary accepts ordered scalar `StoredValue` projections rather than rendered HTML or direct database access. This preserves stored-state semantics and leaves query scope, record authorization and integration-owned reads with the application layer. Unsupported complex fields fail explicitly until an adapter defines a scalar projection.
 

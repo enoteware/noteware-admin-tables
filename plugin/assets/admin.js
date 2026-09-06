@@ -124,6 +124,37 @@
 		}
 	});
 
+	document.addEventListener('click', function (event) {
+		const button = event.target.closest('.nat-export [name="format"]');
+		if (!button) {
+			return;
+		}
+		const box = button.closest('.nat-export');
+		const form = document.createElement('form');
+		form.method = 'post';
+		form.action = box.dataset.url;
+		form.style.display = 'none';
+		box.querySelectorAll('input[type="hidden"]').forEach(function (input) {
+			form.append(input.cloneNode(true));
+		});
+		const format = document.createElement('input');
+		format.type = 'hidden';
+		format.name = 'format';
+		format.value = button.value;
+		form.append(format);
+		document
+			.querySelectorAll('#the-list input[name="post[]"]:checked')
+			.forEach(function (box) {
+				const hidden = document.createElement('input');
+				hidden.type = 'hidden';
+				hidden.name = 'post[]';
+				hidden.value = box.value;
+				form.append(hidden);
+			});
+		document.body.append(form);
+		form.submit();
+	});
+
 	document.addEventListener('keydown', function (event) {
 		if (
 			'Escape' === event.key &&

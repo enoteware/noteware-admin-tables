@@ -103,10 +103,12 @@ This slice does not change runtime plugin behavior. Other issue branches own imp
 
 ## Work-in-progress checkpoint
 
-This branch consolidates current source from issues 5 through 12 so development can pause without losing work. The user requested a save point to conserve usage. It is not an approved release or a full product-coverage claim.
+This branch consolidates current source from issues 5 through 12. It is not an approved release or a full product-coverage claim. Nothing is merged.
 
-The combined tree has not completed integrated WordPress/browser or hosted review acceptance. Some modules are scaffolding, some remain unwired, and the latest view storage work was interrupted before its final verification. The existing isolated test counts above describe individual historical slices, not this combined tree.
+Grok resumed implementation from `b6f5378` on `codex/all-work-checkpoint`. The slice that landed after that checkpoint:
 
-Known remaining work: verify view save/collision/locking behavior in WordPress; exercise numeric and boolean editing fixtures; finish export download routing and jobs; wire additional screens and integrations; complete the feature acceptance matrix. Keep issues open.
+- View bootstrap stays registered before `Configuration`. Isolated WordPress persistence and a Tools > Table views browser path were added. Issue 5 is still open for discovery, drag/resize, icons, and related editor work.
+- Sandbox ACF number and true/false columns are editable. Isolated ACF scalar edit/undo and a browser path were added. Issue 7 is still open for dates, media, relationships, Quick Add, and all-matching jobs.
+- List screens gained nonce-protected CSV/JSON/XLSX downloads of the active filtered view, with private owner-bound files and a post-ID keyset loader. Issue 8 is still open for background workers, view import, and consumer-matrix acceptance.
 
-Progress automation is paused. No more paid reviewer or subagent requests should start until the user resumes work. Existing PRs 13 and 14 retain their individual review history; this draft is the consolidated checkout. Nothing is merged.
+Progress automation stays paused unless Elliot restarts it. Do not merge without explicit approval.

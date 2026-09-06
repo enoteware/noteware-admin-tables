@@ -17,3 +17,12 @@ docker compose run --rm wpcli \
 
 docker compose run --rm wpcli \
   wp eval-file wp-content/noteware-admin-tables-tests/integration/parity-adapters.php
+
+docker compose run --rm -e NAT_ISOLATED_VIEW_TEST=1 wpcli \
+  wp eval-file wp-content/noteware-admin-tables-tests/integration/views-persistence.php
+
+docker compose run --rm -e NAT_ISOLATED_EDITING_TEST=1 wpcli \
+  wp eval-file wp-content/noteware-admin-tables-tests/integration/editing-acf-scalars.php
+
+docker compose run --rm -e NAT_ISOLATED_EXPORT_TEST=1 wpcli \
+  wp eval-file wp-content/noteware-admin-tables-tests/integration/export-download.php

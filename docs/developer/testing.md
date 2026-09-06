@@ -58,7 +58,10 @@ Integration tests cover:
 - the `is`, `empty`, and `not_empty` filter operators for metadata and taxonomy columns, including fail-closed handling of an operator a column did not enable;
 - editor and bulk-panel markup carrying no submittable field names;
 - bulk editing success, precise partial failure, per-record audit rows, and every bulk boundary;
-- browser sorting, filtering, editing, undo, error, focus, and scoped WCAG behavior; and
+- saved-view persistence and role boundaries in a disposable database;
+- ACF number and true/false edit, empty/zero/false, nonce, audit, undo, and rollback in a disposable database;
+- authorized export jobs, frozen filters, selected-row intersection, and format denial in a disposable database;
+- browser sorting, filtering, editing, undo, error, focus, saved views, scalar ACF edits, filtered CSV download, and scoped WCAG behavior; and
 - a stable query count as the displayed row count grows.
 
 ## Sandbox proof
