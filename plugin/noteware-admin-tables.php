@@ -3,7 +3,7 @@
  * Plugin Name:       Noteware Admin Tables
  * Plugin URI:        https://github.com/enoteware/noteware-admin-tables
  * Description:       Build useful WordPress admin list tables with configurable columns, filters, editing, export, and saved views.
- * Version:           0.2.0
+ * Version:           0.3.0.0
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            Noteware
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('NAT_VERSION', '0.2.0');
+define('NAT_VERSION', '0.3.0.0');
 define('NAT_PLUGIN_FILE', __FILE__);
 define('NAT_PLUGIN_DIR', __DIR__);
 

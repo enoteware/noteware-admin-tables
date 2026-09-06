@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0.0] - 2026-09-05
+
+### Added
+
+- Typed query operators and saved-segment storage scoped separately by site, screen, view, and user.
+- Validation and unit tests for query construction and storage boundaries. WordPress controls and live saved-segment workflows still require integration.
+
 ## [0.2.0.0] - 2026-08-27
 
 ### Added

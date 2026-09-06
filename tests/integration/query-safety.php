@@ -177,7 +177,10 @@ $_GET = array(
 $controller->apply($query);
 $assert(array(0) === $query->get('post__in'), 'A sixth metadata filter must fail closed with no results.');
 $assert('' === $query->get('meta_key'), 'A sparse-safe metadata sort must not use the row-dropping meta_key shortcut.');
-$assert('nat_sort_nat_demo_number' === $query->get('orderby'), 'A metadata sort must use its allowlisted named clause.');
+$assert(
+    array('nat_sort_nat_demo_number' => 'DESC', 'ID' => 'DESC') === $query->get('orderby'),
+    'A metadata sort must use only its allowlisted named clause followed by a same-direction ID tie-breaker.'
+);
 
 $meta_query = $query->get('meta_query');
 $assert(is_array($meta_query) && 'AND' === ($meta_query['relation'] ?? null), 'Sort and filter metadata plans must meet at a top-level AND boundary.');
@@ -186,6 +189,8 @@ $sort_group   = is_array($sort_wrapper) ? ($sort_wrapper[0] ?? array()) : array(
 $filter_group = is_array($meta_query) ? ($meta_query[1] ?? array()) : array();
 $assert('OR' === ($sort_group['relation'] ?? null), 'Sparse metadata sorting must combine present and absent rows.');
 $assert('EXISTS' === ($sort_group['nat_sort_nat_demo_number']['compare'] ?? null), 'Sparse sorting must include rows with values.');
+$assert('nat_demo_number' === ($sort_group['nat_sort_nat_demo_number']['key'] ?? null), 'The named sort clause must resolve to its configured metadata key.');
+$assert('DECIMAL(65,30)' === ($sort_group['nat_sort_nat_demo_number']['type'] ?? null), 'A numeric sort must retain its allowlisted precision-preserving cast.');
 $assert('NOT EXISTS' === ($sort_group['nat_sort_nat_demo_number_not_present']['compare'] ?? null), 'Sparse sorting must include rows without values.');
 $assert('AND' === ($filter_group['relation'] ?? null), 'Plugin metadata filters must use their own AND group.');
 $assert(6 === count($filter_group), 'Only five metadata filters plus their relation may reach WP_Meta_Query.');
@@ -403,6 +408,19 @@ if (2 === count($fixture_ids)) {
                     'order'          => $direction,
                     'no_found_rows'  => true,
                 )
+            );
+            $assert(
+                array('nat_sort_nat_demo_note' => $direction, 'ID' => $direction) === $sparse_query->get('orderby'),
+                sprintf('%s metadata sorting must preserve both ordered allowlisted sort terms.', $direction)
+            );
+            $sort_clauses = $sparse_query->meta_query->get_clauses();
+            $named_sort = $sort_clauses['nat_sort_nat_demo_note'] ?? array();
+            global $wpdb;
+            $expected_order_sql = sprintf('CAST(%s.meta_value AS CHAR) %s, %s.ID %s', $named_sort['alias'] ?? '', $direction, $wpdb->posts, $direction);
+            preg_match('/ORDER BY (.+?)(?:\s+LIMIT\s|$)/s', $sparse_query->request, $order_sql);
+            $assert(
+                $expected_order_sql === trim($order_sql[1] ?? ''),
+                sprintf('%s generated SQL must order by the configured metadata value then post ID, with no additional terms.', $direction)
             );
             $sorted_ids = array_map('intval', $sparse_query->posts);
             sort($sorted_ids);
