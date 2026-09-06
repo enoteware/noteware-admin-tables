@@ -11,3 +11,6 @@ Only the Query and Segment modules and their focused tests are implemented here.
 7. Run existing real WordPress query regressions plus added browser/operator/segment permission and 10,000-record cases. Stable ID tie-breaking changes `orderby` from a string to a WordPress order map; update assertions that compare its representation, while preserving result-order assertions.
 
 The module leaves metadata/ACF duplicate-free grouping and missing-row inclusion to existing WordPress query behavior. Core NULL ordering remains direction-dependent. No universal missing-last policy or performance result is claimed.
+
+
+Handle storage contention as a retryable error. Never report a rejected mutation as saved. The repository waits at most one second for its connection-scoped advisory lock and then reloads state before mutation. Do not re-enter another same-scope save from option-update hooks. A release/connection error requires state readback before retry. Validate alternate database routers before using them because the lock and writes must remain on one primary connection. Keep the twenty-segment per-scope cap visible in save controls; existing IDs can still be updated at the cap.

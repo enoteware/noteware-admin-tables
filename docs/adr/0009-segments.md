@@ -12,4 +12,11 @@ Metadata operators are typed and explicitly enabled per column. `empty` retains 
 
 The module adds no custom SQL, row reads, recursive condition trees or unbounded discovery. Existing pagination remains in force. Real WordPress pagination, duplicate-row and 10,000-record benchmarks remain integration gates. This change does not establish a missing-last ordering policy in both directions; it retains core NULL ordering and adds stable ties.
 
-Read/modify/write option persistence follows WordPress options behavior. It does not offer concurrent edit conflict detection. A future collaborative segment editor should add revisions before claiming concurrent edits are protected.
+Every save, delete and default change acquires a prepared MySQL/MariaDB advisory lock for the database, site, post type, view and personal/shared scope. Acquisition waits at most one second; contention or database errors reject the change explicitly. A request-local guard also prevents nested calls on one database connection from acquiring the same lock recursively. While holding the lock, the repository invalidates request option/user-meta caches, reloads current state, and applies only the requested mutation. Distinct successful saves therefore preserve both segments. A delete and default update cannot resurrect a removed entry.
+
+The lock is released in `finally` and automatically by the database when its connection closes. There are no expiring leases, persistent lock options or stale-owner takeovers. Runtime providers must route the lock and mutation through the same primary database connection; connection-pooling or database-routing replacements need their own compatibility verification. These are cooperative locks: external code that directly changes the storage options bypasses this repository's protection. They serialize operations rather than resolve conflicting edits to the same segment; later successful same-segment saves replace that segment.
+
+Storage is capped at twenty segments in each personal/shared post-type/view scope. At the limit, updating an existing segment is allowed; creating another throws without changing state.
+
+Public locking contract:
+https://dev.mysql.com/doc/refman/8.4/en/locking-functions.html

@@ -13,6 +13,9 @@ use RuntimeException;
 
 final class SegmentRepository
 {
+    /** @var array<string, bool> Prevent same-connection nested acquisition from bypassing serialization. */
+    private static array $heldLocks = array();
+
     public function __construct(private readonly string $postType, private readonly string $viewId = 'default')
     {
         SegmentDefinition::assertKey($postType);
@@ -32,37 +35,70 @@ final class SegmentRepository
 
     public function save(SegmentDefinition $segment, bool $shared = false): void
     {
-        $this->authorize($shared);
-        $state = $this->read($shared);
-        $data  = $segment->toArray();
-        if (! isset($state['segments'][$data['id']]) && count($state['segments']) >= 20) {
-            throw new RuntimeException('A view can hold at most twenty segments per scope.');
-        }
-        $state['segments'][$data['id']] = $data;
-        $this->write($state, $shared);
+        $data = $segment->toArray();
+        $this->mutate($shared, static function (array $state) use ($data): array {
+            if (! isset($state['segments'][$data['id']]) && count($state['segments']) >= 20) {
+                throw new RuntimeException('A view can hold at most twenty segments per scope.');
+            }
+            $state['segments'][$data['id']] = $data;
+            return $state;
+        });
     }
 
     public function delete(string $id, bool $shared = false): void
     {
-        $this->authorize($shared);
         SegmentDefinition::assertKey($id);
-        $state = $this->read($shared);
-        unset($state['segments'][$id]);
-        if ($state['default'] === $id) {
-            $state['default'] = null;
-        }
-        $this->write($state, $shared);
+        $this->mutate($shared, static function (array $state) use ($id): array {
+            unset($state['segments'][$id]);
+            if ($state['default'] === $id) {
+                $state['default'] = null;
+            }
+            return $state;
+        });
     }
 
     public function setDefault(?string $id, bool $shared = false): void
     {
+        $this->mutate($shared, static function (array $state) use ($id): array {
+            if (null !== $id && ! isset($state['segments'][$id])) {
+                throw new RuntimeException('The default must name a segment in this scope.');
+            }
+            $state['default'] = $id;
+            return $state;
+        });
+    }
+
+    /** @param callable(array<string, mixed>): array<string, mixed> $change Mutation against freshly loaded state. */
+    private function mutate(bool $shared, callable $change): void
+    {
         $this->authorize($shared);
-        $state = $this->read($shared);
-        if (null !== $id && ! isset($state['segments'][$id])) {
-            throw new RuntimeException('The default must name a segment in this scope.');
+        global $wpdb;
+        $scope = $shared ? 'shared' : 'user:' . get_current_user_id();
+        $database = defined('DB_NAME') ? (string) constant('DB_NAME') : $wpdb->options;
+        $lock = 'nat_seg_' . substr(hash('sha256', $database . ':' . $wpdb->options . ':' . $this->key() . ':' . $scope), 0, 56);
+        // Database locks are connection-scoped, not expiring leases. Never steal an owner.
+        if (isset(self::$heldLocks[$lock]) || '1' !== (string) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, 1)', $lock))) {
+            throw new RuntimeException('Segment storage is busy or unavailable. Retry the change after the current writer finishes.');
         }
-        $state['default'] = $id;
-        $this->write($state, $shared);
+        self::$heldLocks[$lock] = true;
+        try {
+            // A caller may already hold stale option/user-meta state in its request cache.
+            if ($shared) {
+                wp_cache_delete($this->key(), 'options');
+                wp_cache_delete('alloptions', 'options');
+                wp_cache_delete('notoptions', 'options');
+            } else {
+                wp_cache_delete(get_current_user_id(), 'user_meta');
+            }
+            $this->authorize($shared);
+            $this->write($change($this->read($shared)), $shared);
+        } finally {
+            $released = $wpdb->get_var($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock));
+            unset(self::$heldLocks[$lock]);
+            if ('1' !== (string) $released) {
+                throw new RuntimeException('The segment storage connection changed. Verify the stored result before retrying.');
+            }
+        }
     }
 
     private function key(): string
