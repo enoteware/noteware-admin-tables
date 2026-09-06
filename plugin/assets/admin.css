@@ -21,6 +21,13 @@
     font-style: italic;
 }
 
+.nat-export {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
 .nat-edit-button,
 .nat-undo {
     display: inline-flex;

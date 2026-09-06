@@ -5,6 +5,21 @@ const SCREEN = '/wp-admin/edit.php?post_type=nat_demo_record';
 const ONE_RECORD = `${SCREEN}&nat_filter_nat_demo_text=Text%2031`;
 
 test.describe('parity surface', () => {
+	test.beforeAll(async ({ browser }) => {
+		const context = await browser.newContext({
+			storageState: 'test-results/.auth/admin.json',
+		});
+		const page = await context.newPage();
+		await page.goto('/wp-admin/tools.php?page=nat-views');
+		const switcher = page.locator('select[name="view_id"]').first();
+		if ((await switcher.count()) > 0) {
+			await switcher.selectOption('default');
+			await page.getByRole('button', { name: 'Switch view' }).first().click();
+			await expect(page).toHaveURL(/nat_saved=1/);
+		}
+		await context.close();
+	});
+
 	test('renders the configured order, widths, links, terms, and images', async ({
 		page,
 	}) => {

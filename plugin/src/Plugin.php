@@ -18,8 +18,10 @@ use Noteware\AdminTables\Audit\AuditRepository;
 use Noteware\AdminTables\Config\Configuration;
 use Noteware\AdminTables\Editing\BulkEditController;
 use Noteware\AdminTables\Editing\EditController;
+use Noteware\AdminTables\Export\ExportController;
 use Noteware\AdminTables\Query\QueryController;
 use Noteware\AdminTables\Screen\PostScreenController;
+use Noteware\AdminTables\View\ViewController;
 
 final class Plugin
 {
@@ -33,15 +35,19 @@ final class Plugin
 
         self::$booted = true;
 
+        (new ViewController())->register();
+
         $configuration = new Configuration();
         $adapters      = new AdapterRegistry(array(new NativeAdapter(), new MetaAdapter(), new AcfAdapter(), new TaxonomyAdapter()));
         $audit         = new AuditRepository();
 
         add_action('admin_init', array($audit, 'maybeInstall'));
         (new PostScreenController($configuration, $adapters, $audit))->register();
-        (new QueryController($configuration, $adapters))->register();
+        $query = new QueryController($configuration, $adapters);
+        $query->register();
         (new EditController($configuration, $adapters, $audit))->register();
         (new BulkEditController($configuration, $adapters, $audit))->register();
+        (new ExportController($configuration, $adapters, $query))->register();
 
         do_action('noteware_admin_tables_loaded', $configuration, $adapters);
     }

@@ -22,17 +22,19 @@ The first review milestone targets WordPress 6.5 or later and PHP 8.1 or later. 
 - Configurable columns for native post fields, post metadata, ACF fields, and registered taxonomies
 - Display of text, number, boolean, select, date, image, and link values, plus computed permalinks
 - Typed sorting, and filters with `is`, `is empty`, and `has a value` operators
-- Deny-by-default inline editing for allowlisted metadata scalars, ACF text, link, and select fields, taxonomy terms, post titles, post slugs, and featured images
+- Deny-by-default inline editing for allowlisted metadata scalars, ACF text, number, true/false, link, and select fields, taxonomy terms, post titles, post slugs, and featured images
 - Bulk editing with one capability check, one transaction, and one audit record per record
 - An append-only write audit and a conditional undo that survives a page reload
 - Explicit column order, replacement of selected built-in columns, and site-owned column widths
+- Personal and shared presentation views on Tools > Table views
+- Capability-checked CSV, JSON, and XLSX downloads of the active filtered view
 
 ## Planned capabilities
 
 - User, media, comment, and taxonomy list tables
 - Relationship columns
-- CSV export based on the active view
-- Saved personal and shared views
+- Background export jobs for large result sets
+- View import, templates, and additional list screens
 - Conditional formatting
 - ACF integration, followed by WooCommerce and selected ecosystem adapters
 - Import helpers for teams moving from another admin-column tool
